@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPO Stream Package Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0c0e14;
+  --surface: #14171f;
+  --surface2: #1a1e28;
+  --border: #252a36;
+  --border-focus: #4a7cff;
+  --text: #e8eaf0;
+  --text-dim: #8a8f9d;
+  --text-muted: #565b6b;
+  --accent: #4a7cff;
+  --accent-glow: rgba(74,124,255,0.15);
+  --green: #34d399;
+  --green-dim: rgba(52,211,153,0.12);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251,191,36,0.12);
+  --radius: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #e8eaf0, #4a7cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.field select, .field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.field select:focus, .field input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field select option { background: var(--surface2); color: var(--text); }
+.field input::placeholder { color: var(--text-muted); }
+
+.search-select-wrapper { position: relative; }
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.dropdown-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 4px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.dropdown-list.open { display: block; }
+
+.dropdown-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdown-item:hover, .dropdown-item.highlighted {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.dropdown-list::-webkit-scrollbar { width: 6px; }
+.dropdown-list::-webkit-scrollbar-track { background: transparent; }
+.dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status.ok { background: var(--green-dim); color: var(--green); }
+.status.warn { background: var(--yellow-dim); color: var(--yellow); }
+.status.error { background: var(--red-dim); color: var(--red); }
+
+.live-section {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.live-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-box { text-align: center; }
+
+.stat-box .label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-box .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.stat-box .value.currency::before { content: '$'; color: var(--text-dim); }
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.package-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.package-card:hover { border-color: var(--accent); }
+
+.package-card h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.package-card .pkg-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.package-card .pkg-stat .pkg-label { color: var(--text-dim); }
+
+.package-card .pkg-stat .pkg-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Config panel */
+.config-panel {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+}
+
+.config-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.config-toggle h3 {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+
+.config-toggle .arrow {
+  color: var(--text-muted);
+  transition: transform 0.2s;
+  font-size: 12px;
+}
+
+.config-toggle .arrow.open { transform: rotate(90deg); }
+
+.config-body {
+  display: none;
+  padding: 0 16px 16px;
+}
+
+.config-body.open { display: block; }
+
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.config-table th {
+  text-align: left;
+  padding: 6px 10px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.config-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.config-table .key {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--accent);
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.config-table .val {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--green);
+  font-size: 11px;
+}
+
+.config-table .desc {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+/* File status indicators */
+.file-status-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.file-status-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--surface);
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.file-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.file-dot.loaded { background: var(--green); }
+.file-dot.missing { background: var(--red); }
+.file-dot.pending { background: var(--text-muted); }
+
+.file-name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Folder picker */
+.folder-picker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  background: var(--surface2);
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.folder-picker:hover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.folder-picker .icon { font-size: 24px; }
+
+.folder-picker .text p { font-size: 14px; color: var(--text); }
+.folder-picker .text .hint { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+.folder-connected {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--green-dim);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.folder-connected .path {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: var(--green);
+  flex: 1;
+}
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #3a6aee; }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { border-color: var(--text-dim); }
+
+.btn-sm {
+  padding: 6px 14px;
+  font-size: 12px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.hidden { display: none !important; }
+
+.replacements-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.replacements-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.replacements-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.replacements-table td:first-child {
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.replacements-table td:last-child {
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.log {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+
+.log .success { color: var(--green); }
+.log .warn { color: var(--yellow); }
+.log .err { color: var(--red); }
+
+@media (max-width: 768px) {
+  .input-grid { grid-template-columns: 1fr; }
+  .packages-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>HPO Stream Package Builder</h1>
+    <p>Select parameters, review calculations, then generate your package deck</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 0: Connect Assets Folder                                 -->
+  <!-- ============================================================ -->
+  <div class="card" id="connect-card">
+    <div class="card-label">Assets Folder</div>
+
+    <div id="folder-picker" class="folder-picker">
+      <div class="icon">📂</div>
+      <div class="text">
+        <p>Click to select your <strong>Assets</strong> folder</p>
+        <div class="hint">Select the folder containing your .xlsx data files and Templates subfolder</div>
+      </div>
+    </div>
+
+    <div id="folder-connected" class="folder-connected hidden">
+      <span class="status ok">&#10003; Connected</span>
+      <span class="path" id="folder-path"></span>
+      <button class="btn btn-secondary btn-sm" id="btn-refresh">Refresh</button>
+      <button class="btn btn-secondary btn-sm" id="btn-change-folder">Change</button>
+    </div>
+
+    <!-- File mapping config (collapsible) -->
+    <div class="config-panel" id="config-panel">
+      <div class="config-toggle" id="config-toggle">
+        <h3>⚙ File Mapping Configuration</h3>
+        <span class="arrow" id="config-arrow">▶</span>
+      </div>
+      <div class="config-body" id="config-body">
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">
+          Edit the <code style="color:var(--accent);">FILE_MAP</code> object in this HTML file to change file names, sheet names, or column mappings.
+          The current configuration expects:
+        </p>
+        <table class="config-table" id="config-display"></table>
+      </div>
+    </div>
+
+    <!-- File load status -->
+    <div class="file-status-grid" id="file-status"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 1: Inputs                                                -->
+  <!-- ============================================================ -->
+  <div class="card hidden" id="inputs-card">
+    <div class="card-label">Configuration</div>
+    <div class="input-grid">
+      <div class="field">
+        <label>HPO</label>
+        <select id="hpo-select">
+          <option value="">Select HPO...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>DMA</label>
+        <div class="search-select-wrapper">
+          <input type="text" class="search-input" id="dma-search" placeholder="Search DMA..." autocomplete="off" />
+          <div class="dropdown-list" id="dma-dropdown"></div>
+          <input type="hidden" id="dma-value" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Total Budget</label>
+        <input type="text" id="budget-input" placeholder="$0" />
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 2: Results                                               -->
+  <!-- ============================================================ -->
+  <div class="card hidden" id="results-card">
+    <div class="card-label">Package Calculations</div>
+    <div id="validation-status" style="margin-bottom:16px;"></div>
+
+    <div class="live-section">
+      <h3>Live In-Telecast / Base Buy</h3>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="label">Live CPM</div>
+          <div class="value currency" id="r-live-cpm">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Imps</div>
+          <div class="value" id="r-live-imps">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Investment</div>
+          <div class="value currency" id="r-live-invest">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Dates</div>
+          <div class="value" id="r-live-dates" style="font-size:12px;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="packages-grid" id="packages-grid"></div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 3: Generate                                              -->
+  <!-- ============================================================ -->
+  <div class="card hidden" id="generate-card">
+    <div class="card-label">Generate Deck</div>
+
+    <div id="template-status" style="margin-bottom:16px;"></div>
+
+    <details style="margin-bottom:16px;">
+      <summary style="cursor:pointer;color:var(--text-dim);font-size:13px;margin-bottom:8px;">Preview Replacements</summary>
+      <table class="replacements-table">
+        <thead><tr><th>Find</th><th>Replace With</th></tr></thead>
+        <tbody id="replacements-body"></tbody>
+      </table>
+    </details>
+
+    <div class="actions">
+      <button class="btn btn-secondary" id="btn-scan">Scan Template Text</button>
+      <button class="btn btn-primary" id="btn-generate">Generate &amp; Download</button>
+    </div>
+
+    <div class="log hidden" id="log"></div>
+  </div>
+
+  <!-- Scan results -->
+  <div class="card hidden" id="scan-card">
+    <div class="card-label">Template Text Scan</div>
+    <div class="log" id="scan-results" style="max-height:400px;"></div>
+  </div>
+</div>
+
+<script>
+/* ╔═══════════════════════════════════════════════════════════════════╗
+   ║                                                                   ║
+   ║   FILE MAPPING CONFIGURATION                                      ║
+   ║                                                                   ║
+   ║   Edit this section to change file names, sheet names,            ║
+   ║   column mappings, or package CPMs. The app reads everything      ║
+   ║   from these settings — no other code changes needed.             ║
+   ║                                                                   ║
+   ╚═══════════════════════════════════════════════════════════════════╝ */
+
+const FILE_MAP = {
+
+  // ── Data Files (in Assets folder root) ──────────────────────────
+  //
+  //   filename:     Name of the .xlsx file in the Assets folder
+  //   sheet:        Sheet name to read (use 0 for first sheet)
+  //   columns:      Column letters or descriptions for reference
+
+  hpos: {
+    filename:   'HPOs.xlsx',
+    sheet:      0,                      // first sheet
+    col_name:   0,                      // column A = HPO name
+    col_sport:  1,                      // column B = Sport name
+  },
+
+  dmas: {
+    filename:   'DMAs.xlsx',
+    sheet:      0,
+    col_dma:    0,                      // column A = DMA name
+  },
+
+  live_cpm: {
+    filename:   'Live CPM.xlsx',
+    sheet:      0,
+    col_hpo:    0,                      // column A = HPO name (must match HPOs.xlsx)
+    col_rate:   1,                      // column B = CPM rate (number)
+  },
+
+  max_live_imps: {
+    filename:   'Max Live Imps.xlsx',
+    sheet:      0,
+    col_dma:    0,                      // column A = DMA name
+    col_hpo:    1,                      // column B = HPO name
+    col_imps:   3,                      // column D = Max live impressions
+  },
+
+  dates: {
+    filename:   'Dates.xlsx',
+    sheet:      0,
+    col_hpo:        0,                  // column A = HPO name
+    col_live_start: 1,                  // column B = Live start date
+    col_live_end:   2,                  // column C = Live end date
+    col_sup_start:  4,                  // column E = Support start date
+    col_sup_end:    5,                  // column F = Support end date
+  },
+
+
+  // ── Template Files (in Assets/Templates subfolder) ──────────────
+  //
+  //   The builder template is the slide with X placeholders.
+  //   Sport templates are the branded backgrounds in Templates/.
+  //   Template filename must match the HPO name + .pptx
+
+  builder_template: {
+    filename:   'HPO Stream Package Builder.pptx',
+    location:   'root',                 // 'root' = Assets folder root
+  },
+
+  sport_templates: {
+    subfolder:  'Templates',            // subfolder within Assets
+    // Template filenames are auto-matched: "{HPO name}.pptx"
+    // e.g. "NFL - 2026-2027.pptx" for HPO "NFL - 2026-2027"
+  },
+
+
+  // ── Package Options ─────────────────────────────────────────────
+  //
+  //   name:   Display name (must match template text for description)
+  //   cpm:    CPM rate for this package option
+  //   desc:   Template description text pattern (for reference)
+
+  packages: [
+    { name: 'Addressable',   cpm: 40,  desc: 'Targeted to {sport} viewers in {dma} DMA' },
+    { name: 'Custom Nets',   cpm: 35,  desc: 'Targeted to Sports Networks in {dma} DMA' },
+    { name: 'Audience',      cpm: 29,  desc: 'Targeted to Sports Audiences in {dma} DMA' },
+  ],
+
+
+  // ── Budget Split ────────────────────────────────────────────────
+
+  live_budget_pct: 0.50,                // 50% of budget goes to live
+  support_budget_pct: 0.50,             // 50% goes to support package
+};
+
+/* ╔═══════════════════════════════════════════════════════════════════╗
+   ║   END OF CONFIGURATION — no edits needed below this line         ║
+   ╚═══════════════════════════════════════════════════════════════════╝ */
+
+
+// ============ STATE ============
+let DATA = { hpos: [], dmas: [], live_cpm: {}, max_live_imps: {}, dates: {} };
+let state = {
+  hpo: null, dma: null, budget: 0,
+  liveCpm: 0, liveImps: 0, liveBudget: 0, supportBudget: 0,
+  maxLiveImps: 0, liveDates: '', supportDates: '', sport: '',
+  packages: {},
+  dirHandle: null,
+  templateZip: null,
+  sportTemplateZip: null,
+  filesLoaded: {},
+};
+
+
+// ============ INIT ============
+function init() {
+  renderConfigPanel();
+  setupEventListeners();
+}
+
+function setupEventListeners() {
+  document.getElementById('folder-picker').addEventListener('click', pickFolder);
+  document.getElementById('btn-change-folder').addEventListener('click', pickFolder);
+  document.getElementById('btn-refresh').addEventListener('click', () => loadAllFiles(state.dirHandle));
+  document.getElementById('config-toggle').addEventListener('click', toggleConfig);
+  document.getElementById('hpo-select').addEventListener('change', onParamsChanged);
+  document.getElementById('budget-input').addEventListener('input', onBudgetInput);
+  document.getElementById('budget-input').addEventListener('change', onParamsChanged);
+  document.getElementById('btn-generate').addEventListener('click', generatePptx);
+  document.getElementById('btn-scan').addEventListener('click', scanTemplate);
+}
+
+function renderConfigPanel() {
+  const table = document.getElementById('config-display');
+  const rows = [
+    ['DATA FILES', '', ''],
+    ['HPOs.xlsx', `Sheet: first | Col A: HPO name, Col B: Sport`, FILE_MAP.hpos.filename],
+    ['DMAs.xlsx', `Sheet: first | Col A: DMA name`, FILE_MAP.dmas.filename],
+    ['Live CPM.xlsx', `Sheet: first | Col A: HPO name, Col B: CPM rate`, FILE_MAP.live_cpm.filename],
+    ['Max Live Imps.xlsx', `Sheet: first | Col A: DMA, Col B: HPO, Col D: Max imps`, FILE_MAP.max_live_imps.filename],
+    ['Dates.xlsx', `Sheet: first | Col A: HPO, B: Live start, C: Live end, E: Support start, F: Support end`, FILE_MAP.dates.filename],
+    ['TEMPLATES', '', ''],
+    ['Builder Template', `"${FILE_MAP.builder_template.filename}" in Assets root`, ''],
+    ['Sport Templates', `"Templates/" subfolder, named "{HPO name}.pptx"`, ''],
+    ['PACKAGES', '', ''],
+    ['Addressable', `$${FILE_MAP.packages[0].cpm} CPM`, ''],
+    ['Custom Nets', `$${FILE_MAP.packages[1].cpm} CPM`, ''],
+    ['Audience', `$${FILE_MAP.packages[2].cpm} CPM`, ''],
+    ['BUDGET SPLIT', '', ''],
+    ['Live', `${FILE_MAP.live_budget_pct * 100}%`, ''],
+    ['Support', `${FILE_MAP.support_budget_pct * 100}%`, ''],
+  ];
+
+  table.innerHTML = '<tr><th>Setting</th><th>Configuration</th></tr>';
+  rows.forEach(([key, desc]) => {
+    if (desc === '' && key === key.toUpperCase()) {
+      table.innerHTML += `<tr><td colspan="2" style="padding-top:12px;font-weight:700;color:var(--text);font-size:11px;text-transform:uppercase;letter-spacing:1px;">${key}</td></tr>`;
+    } else {
+      table.innerHTML += `<tr><td class="key">${key}</td><td class="desc">${desc}</td></tr>`;
+    }
+  });
+}
+
+function toggleConfig() {
+  const body = document.getElementById('config-body');
+  const arrow = document.getElementById('config-arrow');
+  body.classList.toggle('open');
+  arrow.classList.toggle('open');
+}
+
+
+// ============ FOLDER ACCESS ============
+async function pickFolder() {
+  try {
+    const dirHandle = await window.showDirectoryPicker({ mode: 'read' });
+    state.dirHandle = dirHandle;
+    await loadAllFiles(dirHandle);
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      alert('Error accessing folder: ' + e.message);
+    }
+  }
+}
+
+async function loadAllFiles(dirHandle) {
+  if (!dirHandle) return;
+
+  // Show connected state
+  document.getElementById('folder-picker').classList.add('hidden');
+  document.getElementById('folder-connected').classList.remove('hidden');
+  document.getElementById('folder-path').textContent = dirHandle.name;
+
+  const statusGrid = document.getElementById('file-status');
+  statusGrid.innerHTML = '';
+  state.filesLoaded = {};
+
+  // Expected files
+  const expectedFiles = [
+    { key: 'hpos', name: FILE_MAP.hpos.filename, type: 'xlsx' },
+    { key: 'dmas', name: FILE_MAP.dmas.filename, type: 'xlsx' },
+    { key: 'live_cpm', name: FILE_MAP.live_cpm.filename, type: 'xlsx' },
+    { key: 'max_live_imps', name: FILE_MAP.max_live_imps.filename, type: 'xlsx' },
+    { key: 'dates', name: FILE_MAP.dates.filename, type: 'xlsx' },
+    { key: 'builder', name: FILE_MAP.builder_template.filename, type: 'pptx' },
+  ];
+
+  for (const ef of expectedFiles) {
+    try {
+      const fileHandle = await dirHandle.getFileHandle(ef.name);
+      const file = await fileHandle.getFile();
+      const arrayBuffer = await file.arrayBuffer();
+
+      if (ef.type === 'xlsx') {
+        parseXlsx(ef.key, arrayBuffer);
+      } else if (ef.key === 'builder') {
+        state.templateZip = await JSZip.loadAsync(arrayBuffer);
+      }
+
+      state.filesLoaded[ef.key] = true;
+      statusGrid.innerHTML += `<div class="file-status-item"><div class="file-dot loaded"></div><span class="file-name">${ef.name}</span></div>`;
+    } catch (e) {
+      state.filesLoaded[ef.key] = false;
+      statusGrid.innerHTML += `<div class="file-status-item"><div class="file-dot missing"></div><span class="file-name">${ef.name} — not found</span></div>`;
+    }
+  }
+
+  // Check for Templates subfolder
+  try {
+    const templatesDir = await dirHandle.getDirectoryHandle(FILE_MAP.sport_templates.subfolder);
+    let templateCount = 0;
+    for await (const entry of templatesDir.values()) {
+      if (entry.kind === 'file' && entry.name.endsWith('.pptx')) templateCount++;
+    }
+    state.templatesDir = templatesDir;
+    state.filesLoaded['templates'] = true;
+    statusGrid.innerHTML += `<div class="file-status-item"><div class="file-dot loaded"></div><span class="file-name">Templates/ (${templateCount} files)</span></div>`;
+  } catch (e) {
+    state.filesLoaded['templates'] = false;
+    statusGrid.innerHTML += `<div class="file-status-item"><div class="file-dot missing"></div><span class="file-name">Templates/ — not found</span></div>`;
+  }
+
+  // If core data loaded, populate UI
+  const coreLoaded = ['hpos', 'dmas', 'live_cpm', 'dates'].every(k => state.filesLoaded[k]);
+  if (coreLoaded) {
+    populateDropdowns();
+    document.getElementById('inputs-card').classList.remove('hidden');
+  }
+}
+
+function parseXlsx(key, arrayBuffer) {
+  const wb = XLSX.read(arrayBuffer, { type: 'array', cellDates: true });
+  const sheetName = typeof FILE_MAP[key]?.sheet === 'number'
+    ? wb.SheetNames[FILE_MAP[key].sheet]
+    : FILE_MAP[key]?.sheet || wb.SheetNames[0];
+  const ws = wb.Sheets[sheetName];
+  const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, dateNF: 'mm/dd/yyyy' });
+
+  // Skip header row
+  const dataRows = rows.slice(1).filter(r => r.length > 0 && r[0] != null && r[0] !== '');
+
+  switch (key) {
+    case 'hpos':
+      DATA.hpos = dataRows.map(r => ({
+        name: String(r[FILE_MAP.hpos.col_name] || '').trim(),
+        sport: String(r[FILE_MAP.hpos.col_sport] || '').trim()
+      })).filter(h => h.name);
+      break;
+
+    case 'dmas':
+      DATA.dmas = dataRows.map(r => String(r[FILE_MAP.dmas.col_dma] || '').trim()).filter(Boolean);
+      break;
+
+    case 'live_cpm':
+      DATA.live_cpm = {};
+      dataRows.forEach(r => {
+        const hpo = String(r[FILE_MAP.live_cpm.col_hpo] || '').trim();
+        const rate = parseFloat(r[FILE_MAP.live_cpm.col_rate]);
+        if (hpo && !isNaN(rate)) DATA.live_cpm[hpo] = rate;
+      });
+      break;
+
+    case 'max_live_imps':
+      DATA.max_live_imps = {};
+      dataRows.forEach(r => {
+        const dma = String(r[FILE_MAP.max_live_imps.col_dma] || '').trim();
+        const hpo = String(r[FILE_MAP.max_live_imps.col_hpo] || '').trim();
+        const imps = parseFloat(r[FILE_MAP.max_live_imps.col_imps]);
+        if (dma && hpo) DATA.max_live_imps[`${dma}|${hpo}`] = isNaN(imps) ? 0 : imps;
+      });
+      break;
+
+    case 'dates':
+      DATA.dates = {};
+      dataRows.forEach(r => {
+        const hpo = String(r[FILE_MAP.dates.col_hpo] || '').trim();
+        if (!hpo) return;
+        const fmtDate = (val) => {
+          if (!val) return '';
+          if (val instanceof Date) return `${String(val.getMonth()+1).padStart(2,'0')}/${String(val.getDate()).padStart(2,'0')}/${val.getFullYear()}`;
+          // Try parsing string date
+          const d = new Date(val);
+          if (!isNaN(d)) return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()}`;
+          return String(val);
+        };
+        DATA.dates[hpo] = {
+          live_range: `${fmtDate(r[FILE_MAP.dates.col_live_start])} - ${fmtDate(r[FILE_MAP.dates.col_live_end])}`,
+          support_range: `${fmtDate(r[FILE_MAP.dates.col_sup_start])} - ${fmtDate(r[FILE_MAP.dates.col_sup_end])}`
+        };
+      });
+      break;
+  }
+}
+
+function populateDropdowns() {
+  const hpoSelect = document.getElementById('hpo-select');
+  // Clear existing options beyond the placeholder
+  while (hpoSelect.options.length > 1) hpoSelect.remove(1);
+
+  DATA.hpos.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h.name;
+    opt.textContent = h.name;
+    hpoSelect.appendChild(opt);
+  });
+
+  setupDMADropdown();
+}
+
+
+// ============ DMA SEARCHABLE DROPDOWN ============
+function setupDMADropdown() {
+  const input = document.getElementById('dma-search');
+  const dropdown = document.getElementById('dma-dropdown');
+  const hiddenInput = document.getElementById('dma-value');
+  let highlighted = -1;
+
+  function renderItems(filter = '') {
+    const f = filter.toLowerCase();
+    const items = DATA.dmas.filter(d => d.toLowerCase().includes(f));
+    dropdown.innerHTML = '';
+    highlighted = -1;
+    items.forEach((dma) => {
+      const div = document.createElement('div');
+      div.className = 'dropdown-item';
+      div.textContent = dma;
+      div.addEventListener('mousedown', e => { e.preventDefault(); selectDMA(dma); });
+      dropdown.appendChild(div);
+    });
+    dropdown.classList.toggle('open', items.length > 0);
+  }
+
+  function selectDMA(dma) {
+    input.value = dma;
+    hiddenInput.value = dma;
+    dropdown.classList.remove('open');
+    onParamsChanged();
+  }
+
+  // Remove old listeners by replacing element
+  const newInput = input.cloneNode(true);
+  input.parentNode.replaceChild(newInput, input);
+
+  newInput.addEventListener('focus', () => renderItems(newInput.value));
+  newInput.addEventListener('input', () => renderItems(newInput.value));
+  newInput.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('open'), 150));
+  newInput.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.dropdown-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlighted = Math.min(highlighted + 1, items.length - 1);
+      items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      if (items[highlighted]) items[highlighted].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlighted = Math.max(highlighted - 1, 0);
+      items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      if (items[highlighted]) items[highlighted].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && highlighted >= 0 && items[highlighted]) {
+      e.preventDefault();
+      selectDMA(items[highlighted].textContent);
+    }
+  });
+}
+
+
+// ============ BUDGET FORMATTING ============
+function onBudgetInput(e) {
+  let raw = e.target.value.replace(/[^0-9.]/g, '');
+  if (raw) {
+    const parts = raw.split('.');
+    parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    e.target.value = '$' + parts.join('.');
+  } else {
+    e.target.value = '';
+  }
+}
+
+function parseBudget(str) {
+  return parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
+}
+
+
+// ============ CALCULATIONS ============
+function onParamsChanged() {
+  const hpo = document.getElementById('hpo-select').value;
+  const dma = document.getElementById('dma-value').value;
+  const budget = parseBudget(document.getElementById('budget-input').value);
+
+  if (!hpo || !dma || budget <= 0) {
+    document.getElementById('results-card').classList.add('hidden');
+    document.getElementById('generate-card').classList.add('hidden');
+    return;
+  }
+
+  const hpoData = DATA.hpos.find(h => h.name === hpo);
+  const liveCpm = DATA.live_cpm[hpo];
+  const dateData = DATA.dates[hpo];
+  const maxKey = `${dma}|${hpo}`;
+  const maxLiveImps = DATA.max_live_imps[maxKey];
+
+  if (liveCpm === undefined) {
+    showValidation('error', `No Live CPM found for "${hpo}"`);
+    document.getElementById('results-card').classList.remove('hidden');
+    document.getElementById('generate-card').classList.add('hidden');
+    return;
+  }
+
+  const liveBudget = budget * FILE_MAP.live_budget_pct;
+  const supportBudget = budget * FILE_MAP.support_budget_pct;
+  const liveImps = Math.round((liveBudget / liveCpm) * 1000);
+
+  state = {
+    ...state,
+    hpo, dma, budget, liveCpm, liveImps, liveBudget, supportBudget,
+    maxLiveImps: maxLiveImps !== undefined ? maxLiveImps : null,
+    liveDates: dateData ? dateData.live_range : 'N/A',
+    supportDates: dateData ? dateData.support_range : 'N/A',
+    sport: hpoData ? hpoData.sport : '',
+    packages: {}
+  };
+
+  let validationOk = true;
+  if (maxLiveImps !== undefined && liveImps > maxLiveImps) {
+    showValidation('error',
+      `Budget too large: ${fmt(liveImps)} live imps exceeds max of ${fmt(maxLiveImps)} for ${dma} / ${hpo}. Reduce budget to $${fmt(Math.floor((maxLiveImps * liveCpm / 1000) * 2))} or less.`
+    );
+    validationOk = false;
+  } else if (maxLiveImps === undefined) {
+    showValidation('warn', `No max imps data found for ${dma} + ${hpo}. Proceeding without cap validation.`);
+  } else {
+    showValidation('ok', `Within cap: ${fmt(liveImps)} / ${fmt(maxLiveImps)} max live imps (${Math.round(liveImps/maxLiveImps*100)}% utilized)`);
+  }
+
+  document.getElementById('r-live-cpm').textContent = fmt(liveCpm);
+  document.getElementById('r-live-imps').textContent = fmt(liveImps);
+  document.getElementById('r-live-invest').textContent = fmt(liveBudget);
+  document.getElementById('r-live-dates').textContent = state.liveDates;
+
+  const pkgGrid = document.getElementById('packages-grid');
+  pkgGrid.innerHTML = '';
+
+  for (const pkg of FILE_MAP.packages) {
+    const supportImps = Math.round((supportBudget / pkg.cpm) * 1000);
+    const totalInvestment = budget;
+    const totalImps = liveImps + supportImps;
+    const eCpm = totalImps > 0 ? (totalInvestment / totalImps) * 1000 : 0;
+
+    state.packages[pkg.name] = { cpm: pkg.cpm, supportImps, totalInvestment, totalImps, eCpm };
+
+    const card = document.createElement('div');
+    card.className = 'package-card';
+    card.innerHTML = `
+      <h4>${pkg.name} <span style="color:var(--text-muted);font-weight:400;font-size:12px;">($${pkg.cpm} CPM)</span></h4>
+      <div class="pkg-stat"><span class="pkg-label">Support Dates</span><span class="pkg-value" style="font-size:11px;">${state.supportDates}</span></div>
+      <div class="pkg-stat"><span class="pkg-label">Support Imps</span><span class="pkg-value">${fmt(supportImps)}</span></div>
+      <div class="pkg-stat" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <span class="pkg-label">Total Investment</span><span class="pkg-value">$${fmt(totalInvestment)}</span>
+      </div>
+      <div class="pkg-stat"><span class="pkg-label">Total Imps</span><span class="pkg-value">${fmt(totalImps)}</span></div>
+      <div class="pkg-stat"><span class="pkg-label">eCPM</span><span class="pkg-value">$${eCpm.toFixed(2)}</span></div>
+    `;
+    pkgGrid.appendChild(card);
+  }
+
+  document.getElementById('results-card').classList.remove('hidden');
+
+  if (validationOk || maxLiveImps === undefined) {
+    document.getElementById('generate-card').classList.remove('hidden');
+    // Check template status
+    if (state.templateZip) {
+      document.getElementById('template-status').innerHTML =
+        `<span class="status ok">&#10003; Builder template loaded</span>`;
+    } else {
+      document.getElementById('template-status').innerHTML =
+        `<span class="status error">&#10007; Builder template not found — add "${FILE_MAP.builder_template.filename}" to Assets folder</span>`;
+    }
+    updateReplacementsPreview();
+  } else {
+    document.getElementById('generate-card').classList.add('hidden');
+  }
+}
+
+function showValidation(type, msg) {
+  document.getElementById('validation-status').innerHTML =
+    `<span class="status ${type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'ok'}">${
+      type === 'ok' ? '&#10003;' : type === 'warn' ? '&#9888;' : '&#10007;'
+    } ${msg}</span>`;
+}
+
+function fmt(n) {
+  if (typeof n !== 'number') return String(n);
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+
+// ============ REPLACEMENT ENGINE ============
+function getReplacementPlan() {
+  const p = state.packages;
+  return {
+    global: [
+      { find: 'XXX DMA', replace: `${state.dma} DMA` },
+      { find: 'XXX broadcasts', replace: `${state.sport} broadcasts` },
+      { find: 'XXX viewers', replace: `${state.sport} viewers` },
+    ],
+    single: [
+      { find: '$XX CPM', replace: `$${fmt(state.liveCpm)} CPM` },
+      { find: 'XXX,XXX Impressions', replace: `${fmt(state.liveImps)} Impressions` },
+    ],
+    positional: [
+      {
+        find: 'X/XX/XX \u2013 X/XX/XX',
+        replacements: [
+          state.liveDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+        ]
+      },
+      {
+        find: 'XXX,XXX Imps',
+        replacements: [
+          `${fmt(p['Addressable']?.supportImps || 0)} Imps`,
+          `${fmt(p['Custom Nets']?.supportImps || 0)} Imps`,
+          `${fmt(p['Audience']?.supportImps || 0)} Imps`,
+        ]
+      },
+      {
+        find: 'Package Total Imps: XXX,XXX',
+        replacements: [
+          `Package Total Imps: ${fmt(p['Addressable']?.totalImps || 0)}`,
+          `Package Total Imps: ${fmt(p['Custom Nets']?.totalImps || 0)}`,
+          `Package Total Imps: ${fmt(p['Audience']?.totalImps || 0)}`,
+        ]
+      },
+      {
+        find: 'Package Total Investment: $XX,XXX',
+        replacements: [
+          `Package Total Investment: $${fmt(p['Addressable']?.totalInvestment || 0)}`,
+          `Package Total Investment: $${fmt(p['Custom Nets']?.totalInvestment || 0)}`,
+          `Package Total Investment: $${fmt(p['Audience']?.totalInvestment || 0)}`,
+        ]
+      },
+    ],
+    ecpm: [
+      { find: ': $XX', replacements: [
+        `: $${p['Addressable']?.eCpm.toFixed(2) || '0.00'}`,
+        `: $${p['Custom Nets']?.eCpm.toFixed(2) || '0.00'}`,
+        `: $${p['Audience']?.eCpm.toFixed(2) || '0.00'}`,
+      ]}
+    ]
+  };
+}
+
+function updateReplacementsPreview() {
+  const tbody = document.getElementById('replacements-body');
+  tbody.innerHTML = '';
+  const plan = getReplacementPlan();
+
+  function addRow(find, replace) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escHtml(find)}</td><td>${escHtml(replace)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  plan.global.forEach(r => addRow(r.find + ' (all)', r.replace));
+  plan.single.forEach(r => addRow(r.find, r.replace));
+  const labels = ['Live', 'Addressable', 'Custom Nets', 'Audience'];
+  plan.positional.forEach(p => {
+    p.replacements.forEach((val, i) => addRow(`${p.find} (#${i+1} → ${labels[i] || i+1})`, val));
+  });
+  const pkgLabels = ['Addressable', 'Custom Nets', 'Audience'];
+  plan.ecpm.forEach(e => {
+    e.replacements.forEach((val, i) => addRow(`Package eCPM${e.find} (#${i+1} → ${pkgLabels[i]})`, `Package eCPM${val}`));
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function replaceNth(str, find, replaceVal, n) {
+  const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let count = 0;
+  return str.replace(new RegExp(escaped, 'g'), (match) => {
+    count++;
+    return count === n ? replaceVal : match;
+  });
+}
+
+
+// ============ SCAN TEMPLATE ============
+async function scanTemplate() {
+  if (!state.templateZip) { alert('No builder template loaded.'); return; }
+
+  const scanCard = document.getElementById('scan-card');
+  const scanResults = document.getElementById('scan-results');
+  scanCard.classList.remove('hidden');
+  scanResults.innerHTML = '';
+
+  const slideFiles = Object.keys(state.templateZip.files)
+    .filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/)).sort();
+
+  for (const slideFile of slideFiles) {
+    const xml = await state.templateZip.file(slideFile).async('string');
+    scanResults.innerHTML += `<div style="color:var(--accent);margin-top:8px;font-weight:600;">${slideFile}</div>`;
+
+    const paragraphs = xml.match(/<a:p[\s>][\s\S]*?<\/a:p>/g) || [];
+    paragraphs.forEach((p, idx) => {
+      const runs = p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+      const fullText = runs.map(r => r.replace(/<a:t[^>]*>/, '').replace(/<\/a:t>/, '')).join('');
+      if (fullText.trim() && /X/.test(fullText)) {
+        const runCount = runs.length;
+        const extra = runCount > 1 ? ` <span style="color:var(--yellow);">[${runCount} runs]</span>` : '';
+        scanResults.innerHTML += `<div style="padding-left:16px;">P${idx}: "${escHtml(fullText.trim())}"${extra}</div>`;
+      }
+    });
+  }
+}
+
+
+// ============ GENERATE PPTX ============
+async function generatePptx() {
+  if (!state.templateZip) {
+    alert('No builder template loaded. Ensure "' + FILE_MAP.builder_template.filename + '" is in your Assets folder.');
+    return;
+  }
+
+  const logEl = document.getElementById('log');
+  logEl.classList.remove('hidden');
+  logEl.innerHTML = '';
+
+  function log(msg, cls = '') {
+    logEl.innerHTML += `<div class="${cls}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const plan = getReplacementPlan();
+  log('Starting generation...');
+
+  // Clone the builder template zip
+  const newZip = new JSZip();
+  for (const [path, file] of Object.entries(state.templateZip.files)) {
+    if (file.dir) continue;
+    const content = await file.async('arraybuffer');
+    newZip.file(path, content);
+  }
+
+  const slideFiles = Object.keys(state.templateZip.files)
+    .filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/)).sort();
+
+  let totalReplacements = 0;
+
+  for (const slideFile of slideFiles) {
+    let xml = await state.templateZip.file(slideFile).async('string');
+    const origXml = xml;
+    let slideReplacements = 0;
+
+    // Global
+    for (const r of plan.global) {
+      const regex = new RegExp(r.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      const before = xml;
+      xml = xml.replace(regex, r.replace);
+      if (xml !== before) {
+        const count = (before.match(regex) || []).length;
+        slideReplacements += count;
+        log(`  Global: "${r.find}" → "${r.replace}" (${count}x)`, 'success');
+      }
+    }
+
+    // Single
+    for (const r of plan.single) {
+      const regex = new RegExp(r.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      if (regex.test(xml)) {
+        xml = xml.replace(regex, r.replace);
+        slideReplacements++;
+        log(`  Single: "${r.find}" → "${r.replace}"`, 'success');
+      }
+    }
+
+    // Positional
+    const posLabels = ['Live', 'Addressable', 'Custom Nets', 'Audience'];
+    for (const rule of plan.positional) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const before = xml;
+        xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== before) {
+          slideReplacements++;
+          log(`  Positional: "${rule.find}" #${i+1} (${posLabels[i] || i+1}) → "${rule.replacements[i]}"`, 'success');
+        }
+      }
+    }
+
+    // eCPM
+    const ecpmLabels = ['Addressable', 'Custom Nets', 'Audience'];
+    for (const rule of plan.ecpm) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const before = xml;
+        xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== before) {
+          slideReplacements++;
+          log(`  eCPM: #${i+1} (${ecpmLabels[i]}) → "${rule.replacements[i]}"`, 'success');
+        }
+      }
+    }
+
+    if (xml !== origXml) {
+      newZip.file(slideFile, xml);
+      totalReplacements += slideReplacements;
+    }
+  }
+
+  if (totalReplacements === 0) {
+    log('\u26A0 No replacements made — template may use different placeholders.', 'warn');
+  } else {
+    log(`\u2713 ${totalReplacements} replacements in builder template.`, 'success');
+  }
+
+  // ---- Merge into sport template if available ----
+  let outputZip = newZip;
+  let usedSportTemplate = false;
+
+  if (state.templatesDir) {
+    const sportFileName = `${state.hpo}.pptx`;
+    try {
+      const sportFileHandle = await state.templatesDir.getFileHandle(sportFileName);
+      const sportFile = await sportFileHandle.getFile();
+      const sportBuffer = await sportFile.arrayBuffer();
+      const sportZip = await JSZip.loadAsync(sportBuffer);
+
+      log(`Loading sport template: ${sportFileName}...`, 'success');
+
+      // Strategy: Take the sport template as base, then inject the
+      // filled builder slide as an additional slide
+      // For now, we add the builder slide content into the sport template
+      // by copying the builder's slide1 XML and its relationships/media
+
+      // Get builder slide XML (already with replacements)
+      const builderSlideXml = await newZip.file('ppt/slides/slide1.xml').async('string');
+
+      // Find next available slide number in sport template
+      const sportSlides = Object.keys(sportZip.files)
+        .filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/));
+      const maxSlideNum = sportSlides.reduce((max, f) => {
+        const n = parseInt(f.match(/slide(\d+)/)[1]);
+        return Math.max(max, n);
+      }, 0);
+      const newSlideNum = maxSlideNum + 1;
+      const newSlidePath = `ppt/slides/slide${newSlideNum}.xml`;
+
+      // Add builder slide to sport template
+      sportZip.file(newSlidePath, builderSlideXml);
+
+      // Copy builder slide relationships
+      const builderRels = newZip.file('ppt/slides/_rels/slide1.xml.rels');
+      if (builderRels) {
+        const relsContent = await builderRels.async('string');
+        sportZip.file(`ppt/slides/_rels/slide${newSlideNum}.xml.rels`, relsContent);
+      }
+
+      // Copy builder media files
+      for (const [path, file] of Object.entries(newZip.files)) {
+        if (path.startsWith('ppt/media/') && !sportZip.files[path]) {
+          sportZip.file(path, await file.async('arraybuffer'));
+        }
+      }
+
+      // Update presentation.xml to include new slide
+      let presXml = await sportZip.file('ppt/presentation.xml').async('string');
+      const sldIdListMatch = presXml.match(/<p:sldIdLst>([\s\S]*?)<\/p:sldIdLst>/);
+      if (sldIdListMatch) {
+        // Find max id
+        const idMatches = sldIdListMatch[1].match(/id="(\d+)"/g) || [];
+        const maxId = idMatches.reduce((max, m) => Math.max(max, parseInt(m.match(/\d+/)[0])), 256);
+        const newId = maxId + 1;
+        const newEntry = `<p:sldId id="${newId}" r:id="rId${newSlideNum + 10}"/>`;
+        presXml = presXml.replace('</p:sldIdLst>', newEntry + '</p:sldIdLst>');
+        sportZip.file('ppt/presentation.xml', presXml);
+      }
+
+      // Update presentation.xml.rels
+      let presRels = await sportZip.file('ppt/_rels/presentation.xml.rels').async('string');
+      const newRel = `<Relationship Id="rId${newSlideNum + 10}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newSlideNum}.xml"/>`;
+      presRels = presRels.replace('</Relationships>', newRel + '</Relationships>');
+      sportZip.file('ppt/_rels/presentation.xml.rels', presRels);
+
+      // Update [Content_Types].xml
+      let contentTypes = await sportZip.file('[Content_Types].xml').async('string');
+      if (!contentTypes.includes(newSlidePath)) {
+        const newPart = `<Override PartName="/${newSlidePath}" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`;
+        contentTypes = contentTypes.replace('</Types>', newPart + '</Types>');
+        sportZip.file('[Content_Types].xml', contentTypes);
+      }
+
+      outputZip = sportZip;
+      usedSportTemplate = true;
+      log(`\u2713 Merged builder slide into "${sportFileName}" as slide ${newSlideNum}`, 'success');
+
+    } catch (e) {
+      log(`Sport template "${sportFileName}" not found — outputting builder template only.`, 'warn');
+    }
+  }
+
+  // Download
+  log('Generating .pptx file...');
+  try {
+    const blob = await outputZip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    const filename = `${state.hpo} - ${state.dma}.pptx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    log(`\u2713 Downloaded: ${filename}${usedSportTemplate ? ' (with sport template)' : ''}`, 'success');
+  } catch (e) {
+    log(`\u2717 Error: ${e.message}`, 'err');
+  }
+}
+
+
+// ============ BOOT ============
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

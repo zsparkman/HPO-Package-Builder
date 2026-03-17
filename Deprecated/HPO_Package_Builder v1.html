@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HPO Stream Package Builder</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --bg: #0c0e14;
+  --surface: #14171f;
+  --surface2: #1a1e28;
+  --border: #252a36;
+  --border-focus: #4a7cff;
+  --text: #e8eaf0;
+  --text-dim: #8a8f9d;
+  --text-muted: #565b6b;
+  --accent: #4a7cff;
+  --accent-glow: rgba(74,124,255,0.15);
+  --green: #34d399;
+  --green-dim: rgba(52,211,153,0.12);
+  --red: #f87171;
+  --red-dim: rgba(248,113,113,0.12);
+  --yellow: #fbbf24;
+  --yellow-dim: rgba(251,191,36,0.12);
+  --radius: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+}
+
+.app {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 24px 80px;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: 48px;
+}
+
+.header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #e8eaf0, #4a7cff);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header p {
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 20px;
+}
+
+.card-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 16px;
+}
+
+.field label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.field select, .field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.field select:focus, .field input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.field select option { background: var(--surface2); color: var(--text); }
+
+.field input::placeholder { color: var(--text-muted); }
+
+.search-select-wrapper {
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+
+.search-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.dropdown-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-top: 4px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+.dropdown-list.open { display: block; }
+
+.dropdown-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.dropdown-item:hover, .dropdown-item.highlighted {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.dropdown-list::-webkit-scrollbar { width: 6px; }
+.dropdown-list::-webkit-scrollbar-track { background: transparent; }
+.dropdown-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Status badges */
+.status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status.ok { background: var(--green-dim); color: var(--green); }
+.status.warn { background: var(--yellow-dim); color: var(--yellow); }
+.status.error { background: var(--red-dim); color: var(--red); }
+
+/* Results */
+.results-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 1fr 3fr;
+  gap: 12px;
+  align-items: center;
+}
+
+.live-section {
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.live-section h3 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.stat-box {
+  text-align: center;
+}
+
+.stat-box .label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 4px;
+}
+
+.stat-box .value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.stat-box .value.currency::before { content: '$'; color: var(--text-dim); }
+
+.packages-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.package-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  transition: border-color 0.2s;
+}
+
+.package-card:hover { border-color: var(--accent); }
+
+.package-card h4 {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.package-card .pkg-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 13px;
+}
+
+.package-card .pkg-stat .pkg-label { color: var(--text-dim); }
+
+.package-card .pkg-stat .pkg-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 500;
+  font-size: 13px;
+}
+
+/* Template section */
+.template-section {
+  margin-top: 16px;
+}
+
+.file-drop {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 32px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.file-drop:hover, .file-drop.dragover {
+  border-color: var(--accent);
+  background: var(--accent-glow);
+}
+
+.file-drop p { color: var(--text-dim); font-size: 14px; }
+.file-drop .hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+.btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: white;
+}
+
+.btn-primary:hover { background: #3a6aee; }
+
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.btn-secondary:hover { border-color: var(--text-dim); }
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.hidden { display: none !important; }
+
+/* Replacement preview */
+.replacements-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.replacements-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.replacements-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+
+.replacements-table td:first-child {
+  color: var(--red);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.replacements-table td:last-child {
+  color: var(--green);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+.log {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--surface2);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+
+.log .success { color: var(--green); }
+.log .warn { color: var(--yellow); }
+.log .err { color: var(--red); }
+
+@media (max-width: 768px) {
+  .input-grid { grid-template-columns: 1fr; }
+  .packages-grid { grid-template-columns: 1fr; }
+  .stat-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1>HPO Stream Package Builder</h1>
+    <p>Select parameters, review calculations, then generate your package deck</p>
+  </div>
+
+  <!-- STEP 1: Inputs -->
+  <div class="card">
+    <div class="card-label">Configuration</div>
+    <div class="input-grid">
+      <div class="field">
+        <label>HPO</label>
+        <select id="hpo-select">
+          <option value="">Select HPO...</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>DMA</label>
+        <div class="search-select-wrapper">
+          <input type="text" class="search-input" id="dma-search" placeholder="Search DMA..." autocomplete="off" />
+          <div class="dropdown-list" id="dma-dropdown"></div>
+          <input type="hidden" id="dma-value" />
+        </div>
+      </div>
+      <div class="field">
+        <label>Total Budget</label>
+        <input type="text" id="budget-input" placeholder="$0" />
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 2: Results -->
+  <div class="card hidden" id="results-card">
+    <div class="card-label">Package Calculations</div>
+
+    <div id="validation-status" style="margin-bottom:16px;"></div>
+
+    <div class="live-section">
+      <h3>Live In-Telecast / Base Buy</h3>
+      <div class="stat-grid">
+        <div class="stat-box">
+          <div class="label">Live CPM</div>
+          <div class="value currency" id="r-live-cpm">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Imps</div>
+          <div class="value" id="r-live-imps">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Investment</div>
+          <div class="value currency" id="r-live-invest">—</div>
+        </div>
+        <div class="stat-box">
+          <div class="label">Live Dates</div>
+          <div class="value" id="r-live-dates" style="font-size:12px;">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="packages-grid" id="packages-grid"></div>
+  </div>
+
+  <!-- STEP 3: Template & Generate -->
+  <div class="card hidden" id="generate-card">
+    <div class="card-label">Generate Deck</div>
+
+    <div class="file-drop" id="file-drop">
+      <p>Drop your template .pptx here or click to browse</p>
+      <div class="hint" id="template-hint">Expected: <span id="expected-template"></span></div>
+      <input type="file" id="file-input" accept=".pptx" style="display:none;" />
+    </div>
+
+    <div id="template-loaded" class="hidden" style="margin-top:16px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+        <span class="status ok">&#10003; Template Loaded</span>
+        <span id="loaded-filename" style="color:var(--text-dim);font-size:13px;"></span>
+      </div>
+
+      <details style="margin-bottom:16px;">
+        <summary style="cursor:pointer;color:var(--text-dim);font-size:13px;margin-bottom:8px;">Preview Replacements</summary>
+        <table class="replacements-table" id="replacements-table">
+          <thead><tr><th>Find</th><th>Replace With</th></tr></thead>
+          <tbody id="replacements-body"></tbody>
+        </table>
+      </details>
+
+      <div class="actions">
+        <button class="btn btn-secondary" id="btn-scan">Scan Template Text</button>
+        <button class="btn btn-primary" id="btn-generate">Generate &amp; Download</button>
+      </div>
+
+      <div class="log hidden" id="log"></div>
+    </div>
+  </div>
+
+  <!-- Scan results -->
+  <div class="card hidden" id="scan-card">
+    <div class="card-label">Template Text Scan</div>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px;">All text containing "X" patterns found in the template:</p>
+    <div class="log" id="scan-results" style="max-height:400px;"></div>
+  </div>
+</div>
+
+<script>
+// ============ EMBEDDED DATA ============
+const DATA = {"hpos":[{"name":"College Football - 2026-2027","sport":"College Football"},{"name":"College Football Playoffs - 2026-2027","sport":"College Football Playoffs"},{"name":"Men's March Madness - 2026","sport":"March Madness"},{"name":"MLB Playoffs - 2026","sport":"MLB Playoffs"},{"name":"MLB Regular Season - 2026","sport":"MLB"},{"name":"NBA Playoffs - 2026","sport":"NBA Playoffs"},{"name":"NFL - 2026-2027","sport":"NFL"},{"name":"NHL Playoffs - 2026","sport":"NHL Playoffs"},{"name":"NHL Regular Season - 2025-2026","sport":"NHL"},{"name":"Women's March Madness - 2026","sport":"Women's March Madness"},{"name":"World Cup - 2026","sport":"World Cup"}],"dmas":["Abilene-Sweetwater","Albany, GA","Albany-Schenectady-Troy","Albuquerque-Santa Fe","Alexandria, LA","Alpena","Amarillo","Anchorage","Atlanta","Augusta-Aiken","Austin","Bakersfield","Baltimore","Bangor","Baton Rouge","Beaumont-Port Arthur","Bend, OR","Billings","Biloxi-Gulfport","Binghamton","Birmingham (Ann and Tusc)","Bismarck-Mnt-Dcknsn(Wlstn)","Bluefield-Beckley-Oak Hill","Boise","Boston (Manchester)","Bowling Green","Buffalo","Burlington-Plattsburgh","Butte-Bozeman","Casper-Riverton","Cedar Rapids-Wtrlo-IWC&Dub","Champaign&Sprngfld-Decatur","Charleston, SC","Charleston-Huntington","Charlotte","Charlottesville","Chattanooga","Cheyenne-Scottsbluff","Chicago","Chico-Redding","Cincinnati","Clarksburg-Weston","Cleveland-Akron (Canton)","Colorado Springs-Pueblo","Columbia, SC","Columbia-Jefferson City","Columbus, GA (Opelika, AL)","Columbus, OH","Columbus-Tupelo-West Point","Corpus Christi","Dallas-Ft. Worth","Davenport-R.Island-Moline","Dayton","Denver","Des Moines-Ames","Detroit","Dothan","Duluth-Superior","El Paso (Las Cruces)","Elmira (Corning)","Erie","Eugene","Eureka","Evansville","Fairbanks","Fargo","Flint-Saginaw-Bay City","Fresno-Visalia","Ft. Myers-Naples","Ft. Smith-Fay-Sprngdl-Rgrs","Ft. Wayne","Gainesville","Grand Junction-Montrose","Grand Rapids-Kalmzoo-B.Crk","Grand Total","Great Falls","Green Bay-Appleton","Greensboro-H.Point-W.Salem","Greenville-N.Bern-Washngtn","Greenvll-Spart-Ashevll-And","Harlingen-Wslco-Brnsvl-Mca","Harrisburg-Lncstr-Leb-York","Harrisonburg","Hartford & New Haven","Hattiesburg-Laurel","Helena","Honolulu","Houston","Huntsville-Decatur (Flor)","Idaho Fals-Pocatllo(Jcksn)","Indianapolis","Jackson, MS","Jackson, TN","Jacksonville","Johnstown-Altoona-St Colge","Jonesboro","Joplin-Pittsburg","Juneau","Kansas City","Knoxville","La Crosse-Eau Claire","Lafayette, IN","Lafayette, LA","Lake Charles","Lansing","Laredo","Las Vegas","Lexington","Lima","Lincoln & Hastings-Krny","Little Rock-Pine Bluff","Los Angeles","Louisville","Lubbock","Macon","Madison","Mankato","Marquette","Medford-Klamath Falls","Memphis","Meridian","Miami-Ft. Lauderdale","Milwaukee","Minneapolis-St. Paul","Missoula","Mobile-Pensacola (Ft Walt)","Monroe-El Dorado","Monterey-Salinas","Montgomery-Selma","Myrtle Beach-Florence","Nashville","New Orleans","New York","Norfolk-Portsmth-Newpt Nws","North Platte","Odessa-Midland","Oklahoma City","Omaha","Orlando-Daytona Bch-Melbrn","Ottumwa-Kirksville","Paducah-Cape Girard-Harsbg","Palm Springs","Panama City","Parkersburg","Peoria-Bloomington","Philadelphia","Phoenix (Prescott)","Pittsburgh","Portland, OR","Portland-Auburn","Presque Isle","Providence-New Bedford","Quincy-Hannibal-Keokuk","Raleigh-Durham (Fayetvlle)","Rapid City","Reno","Richmond-Petersburg","Roanoke-Lynchburg","Rochester, NY","Rochestr-Mason City-Austin","Rockford","Sacramnto-Stkton-Modesto","Salisbury","Salt Lake City","San Angelo","San Antonio","San Diego","San Francisco-Oak-San Jose","Santabarbra-Sanmar-Sanluob","Savannah","Seattle-Tacoma","Sherman-Ada","Shreveport","Sioux City","Sioux Falls(Mitchell)","South Bend-Elkhart","Spokane","Springfield, MO","Springfield-Holyoke","St. Joseph","St. Louis","Syracuse","Tallahassee-Thomasville","Tampa-St. Pete (Sarasota)","Terre Haute","Toledo","Topeka","Traverse City-Cadillac","Tri-Cities, TN-VA","Tucson (Sierra Vista)","Tulsa","Twin Falls","Tyler-Longview(Lfkn&Ncgd)","Utica","Victoria","Waco-Temple-Bryan","Washington, DC (Hagrstwn)","Watertown","Wausau-Rhinelander","West Palm Beach-Ft. Pierce","Wheeling-Steubenville","Wichita Falls & Lawton","Wichita-Hutchinson Plus","Wilkes Barre-Scranton-Hztn","Wilmington","Yakima-Pasco-Rchlnd-Knnwck","Youngstown","Yuma-El Centro","Zanesville"],"live_cpm":{"World Cup - 2026":95,"NFL - 2026-2027":60,"College Football - 2026-2027":60,"Men's March Madness - 2026":120,"College Football Playoffs - 2026-2027":60,"MLB Playoffs - 2026":56,"NBA Playoffs - 2026":56,"NHL Playoffs - 2026":56,"MLB Regular Season - 2026":52,"Women's March Madness - 2026":48},"max_live_imps":{"Abilene-Sweetwater|NBA Regular Season - 2025-2026":29,"Abilene-Sweetwater|MLB Playoffs - 2026":2,"Abilene-Sweetwater|College Football Playoffs - 2026-2027":2,"Abilene-Sweetwater|World Cup - 2026":59,"Abilene-Sweetwater|NFL - 2026-2027":1,"Abilene-Sweetwater|MLB Regular Season - 2026":1,"Abilene-Sweetwater|College Football - 2026-2027":0,"Albany, GA|NBA Regular Season - 2025-2026":9,"Albany, GA|MLB Playoffs - 2026":1,"Albany, GA|College Football Playoffs - 2026-2027":3,"Albany, GA|World Cup - 2026":93,"Albany, GA|NFL - 2026-2027":10,"Albany, GA|MLB Regular Season - 2026":1,"Albany, GA|College Football - 2026-2027":39,"Albany-Schenectady-Troy|College Football Playoffs - 2026-2027":-28823,"Albany-Schenectady-Troy|Men's March Madness - 2026":42493,"Albany-Schenectady-Troy|NHL Playoffs - 2026":141913,"Albany-Schenectady-Troy|College Football - 2026-2027":302455,"Albany-Schenectady-Troy|NFL - 2026-2027":676327,"Albany-Schenectady-Troy|MLB Playoffs - 2026":301547,"Albany-Schenectady-Troy|NBA Regular Season - 2025-2026":364243,"Albany-Schenectady-Troy|NHL Regular Season - 2025-2026":285610,"Albany-Schenectady-Troy|Men's College Basketball - 2025-2026":297255,"Albany-Schenectady-Troy|World Cup - 2026":87704,"Albany-Schenectady-Troy|MLB Regular Season - 2026":1980688,"Albany-Schenectady-Troy|NBA Playoffs - 2026":126081,"Albany-Schenectady-Troy|Women's March Madness - 2026":60402,"Albuquerque-Santa Fe|World Cup - 2026":1769,"Albuquerque-Santa Fe|MLB Playoffs - 2026":2717,"Albuquerque-Santa Fe|College Football - 2026-2027":9897,"Albuquerque-Santa Fe|Men's March Madness - 2026":2318,"Albuquerque-Santa Fe|Men's College Basketball - 2025-2026":4752,"Albuquerque-Santa Fe|NBA Playoffs - 2026":1922,"Albuquerque-Santa Fe|MLB Regular Season - 2026":5278,"Albuquerque-Santa Fe|NBA Regular Season - 2025-2026":9413,"Albuquerque-Santa Fe|College Football Playoffs - 2026-2027":700,"Albuquerque-Santa Fe|NHL Playoffs - 2026":3590,"Albuquerque-Santa Fe|NFL - 2026-2027":12030,"Albuquerque-Santa Fe|NHL Regular Season - 2025-2026":9223,"Albuquerque-Santa Fe|Women's March Madness - 2026":829,"Alexandria, LA|World Cup - 2026":32,"Alexandria, LA|MLB Playoffs - 2026":90,"Alexandria, LA|College Football - 2026-2027":595,"Alexandria, LA|Men's March Madness - 2026":59,"Alexandria, LA|Men's College Basketball - 2025-2026":306,"Alexandria, LA|NBA Playoffs - 2026":8,"Alexandria, LA|MLB Regular Season - 2026":111,"Alexandria, LA|NBA Regular Season - 2025-2026":43,"Alexandria, LA|College Football Playoffs - 2026-2027":52,"Alexandria, LA|NHL Playoffs - 2026":9,"Alexandria, LA|NFL - 2026-2027":209,"Alexandria, LA|NHL Regular Season - 2025-2026":9,"Alexandria, LA|Women's March Madness - 2026":134,"Alpena|World Cup - 2026":723,"Alpena|MLB Playoffs - 2026":9930,"Alpena|College Football - 2026-2027":14091,"Alpena|Men's March Madness - 2026":3651,"Alpena|Men's College Basketball - 2025-2026":6436,"Alpena|NBA Playoffs - 2026":1113,"Alpena|MLB Regular Season - 2026":63082,"Alpena|NBA Regular Season - 2025-2026":4887,"Alpena|College Football Playoffs - 2026-2027":966,"Alpena|NHL Playoffs - 2026":5018,"Alpena|NFL - 2026-2027":18599,"Alpena|NHL Regular Season - 2025-2026":13853,"Alpena|Women's March Madness - 2026":542,"Amarillo|MLB Regular Season - 2026":1,"Amarillo|NFL - 2026-2027":9,"Amarillo|College Football - 2026-2027":2,"Amarillo|NBA Regular Season - 2025-2026":77,"Amarillo|NBA Playoffs - 2026":7,"Amarillo|World Cup - 2026":70,"Anchorage|NBA Playoffs - 2026":6,"Anchorage|MLB Playoffs - 2026":19,"Anchorage|College Football - 2026-2027":1,"Anchorage|NBA Regular Season - 2025-2026":213,"Anchorage|NFL - 2026-2027":4,"Anchorage|World Cup - 2026":91,"Anchorage|MLB Regular Season - 2026":13,"Atlanta|Men's March Madness - 2026":72989,"Atlanta|College Football - 2026-2027":1028582,"Atlanta|World Cup - 2026":65467,"Atlanta|MLB Playoffs - 2026":131182,"Atlanta|Men's College Basketball - 2025-2026":306508,"Atlanta|NBA Playoffs - 2026":108069,"Atlanta|MLB Regular Season - 2026":1053669,"Atlanta|NBA Regular Season - 2025-2026":373068,"Atlanta|College Football Playoffs - 2026-2027":90484,"Atlanta|NHL Playoffs - 2026":40432,"Atlanta|NFL - 2026-2027":567803,"Atlanta|NHL Regular Season - 2025-2026":49010,"Atlanta|Women's March Madness - 2026":61756,"Augusta-Aiken|World Cup - 2026":290,"Augusta-Aiken|MLB Playoffs - 2026":2868,"Augusta-Aiken|College Football - 2026-2027":42105,"Augusta-Aiken|Men's March Madness - 2026":2072,"Augusta-Aiken|Men's College Basketball - 2025-2026":9842,"Augusta-Aiken|NBA Playoffs - 2026":2777,"Augusta-Aiken|MLB Regular Season - 2026":10544,"Augusta-Aiken|NBA Regular Season - 2025-2026":8129,"Augusta-Aiken|College Football Playoffs - 2026-2027":2426,"Augusta-Aiken|NHL Playoffs - 2026":625,"Augusta-Aiken|NFL - 2026-2027":19397,"Augusta-Aiken|NHL Regular Season - 2025-2026":759,"Augusta-Aiken|Women's March Madness - 2026":4238,"Austin|Men's March Madness - 2026":24093,"Austin|NFL - 2026-2027":546357,"Austin|World Cup - 2026":73488,"Austin|College Football - 2026-2027":977238,"Austin|College Football Playoffs - 2026-2027":314578,"Austin|NBA Playoffs - 2026":91460,"Austin|NBA Regular Season - 2025-2026":211548,"Austin|MLB Regular Season - 2026":339283,"Austin|NHL Playoffs - 2026":80492,"Austin|MLB Playoffs - 2026":135209,"Austin|Men's College Basketball - 2025-2026":279243,"Austin|NHL Regular Season - 2025-2026":55550,"Austin|Women's March Madness - 2026":81108,"Bakersfield|Men's March Madness - 2026":12387,"Bakersfield|NHL Playoffs - 2026":17229,"Bakersfield|College Football Playoffs - 2026-2027":10654,"Bakersfield|World Cup - 2026":12152,"Bakersfield|NBA Playoffs - 2026":40110,"Bakersfield|NFL - 2026-2027":201636,"Bakersfield|MLB Playoffs - 2026":107062,"Bakersfield|Men's College Basketball - 2025-2026":43695,"Bakersfield|College Football - 2026-2027":95736,"Bakersfield|NBA Regular Season - 2025-2026":600713,"Bakersfield|MLB Regular Season - 2026":3110322,"Bakersfield|NHL Regular Season - 2025-2026":27118,"Bakersfield|Women's March Madness - 2026":9613,"Baltimore|NFL - 2026-2027":11,"Baltimore|College Football - 2026-2027":28,"Baltimore|MLB Regular Season - 2026":164,"Baltimore|NBA Playoffs - 2026":53,"Baltimore|MLB Playoffs - 2026":0,"Baltimore|NBA Regular Season - 2025-2026":464,"Baltimore|Men's College Basketball - 2025-2026":1,"Baltimore|World Cup - 2026":1424,"Bangor|Men's March Madness - 2026":13755,"Bangor|College Football - 2026-2027":45407,"Bangor|World Cup - 2026":7275,"Bangor|MLB Playoffs - 2026":35962,"Bangor|Men's College Basketball - 2025-2026":41799,"Bangor|NBA Playoffs - 2026":14873,"Bangor|MLB Regular Season - 2026":137049,"Bangor|NBA Regular Season - 2025-2026":54164,"Bangor|College Football Playoffs - 2026-2027":6824,"Bangor|NHL Playoffs - 2026":25626,"Bangor|NFL - 2026-2027":92596,"Bangor|NHL Regular Season - 2025-2026":34116,"Bangor|Women's March Madness - 2026":9405,"Baton Rouge|World Cup - 2026":315,"Baton Rouge|MLB Playoffs - 2026":2117,"Baton Rouge|College Football - 2026-2027":38944,"Baton Rouge|Men's March Madness - 2026":2162,"Baton Rouge|Men's College Basketball - 2025-2026":10398,"Baton Rouge|NBA Playoffs - 2026":3075,"Baton Rouge|MLB Regular Season - 2026":6750,"Baton Rouge|NBA Regular Season - 2025-2026":7720,"Baton Rouge|College Football Playoffs - 2026-2027":2909,"Baton Rouge|NHL Playoffs - 2026":873,"Baton Rouge|NFL - 2026-2027":26131,"Baton Rouge|NHL Regular Season - 2025-2026":1122,"Baton Rouge|Women's March Madness - 2026":5399,"Beaumont-Port Arthur|World Cup - 2026":5219,"Beaumont-Port Arthur|MLB Playoffs - 2026":29737,"Beaumont-Port Arthur|College Football - 2026-2027":206930,"Beaumont-Port Arthur|Men's March Madness - 2026":25969,"Beaumont-Port Arthur|Men's College Basketball - 2025-2026":71749,"Beaumont-Port Arthur|NBA Playoffs - 2026":33564,"Beaumont-Port Arthur|MLB Regular Season - 2026":80424,"Beaumont-Port Arthur|NBA Regular Season - 2025-2026":80501,"Beaumont-Port Arthur|College Football Playoffs - 2026-2027":13648,"Beaumont-Port Arthur|NHL Playoffs - 2026":9633,"Beaumont-Port Arthur|NFL - 2026-2027":209589,"Beaumont-Port Arthur|NHL Regular Season - 2025-2026":9648,"Beaumont-Port Arthur|Women's March Madness - 2026":19999,"Bend, OR|College Football - 2026-2027":2,"Bend, OR|NBA Playoffs - 2026":3,"Bend, OR|College Football Playoffs - 2026-2027":4,"Bend, OR|NBA Regular Season - 2025-2026":254,"Bend, OR|World Cup - 2026":69,"Billings|Men's March Madness - 2026":14542,"Billings|College Football - 2026-2027":67333,"Billings|World Cup - 2026":2583,"Billings|MLB Playoffs - 2026":22966,"Billings|Men's College Basketball - 2025-2026":35058,"Billings|NBA Playoffs - 2026":7138,"Billings|MLB Regular Season - 2026":49879,"Billings|NBA Regular Season - 2025-2026":13133,"Billings|College Football Playoffs - 2026-2027":8838,"Billings|NHL Playoffs - 2026":18932,"Billings|NFL - 2026-2027":90242,"Billings|NHL Regular Season - 2025-2026":23727,"Billings|Women's March Madness - 2026":6880,"Biloxi-Gulfport|Men's College Basketball - 2025-2026":3,"Biloxi-Gulfport|College Football - 2026-2027":15,"Biloxi-Gulfport|MLB Regular Season - 2026":1,"Biloxi-Gulfport|NBA Playoffs - 2026":0,"Biloxi-Gulfport|NFL - 2026-2027":17,"Biloxi-Gulfport|NBA Regular Season - 2025-2026":354,"Biloxi-Gulfport|World Cup - 2026":112,"Binghamton|Men's March Madness - 2026":11521,"Binghamton|NFL - 2026-2027":101867,"Binghamton|College Football - 2026-2027":84191,"Binghamton|World Cup - 2026":12569,"Binghamton|NBA Playoffs - 2026":17073,"Binghamton|NBA Regular Season - 2025-2026":52925,"Binghamton|MLB Regular Season - 2026":369888,"Binghamton|NHL Playoffs - 2026":34645,"Binghamton|College Football Playoffs - 2026-2027":10042,"Binghamton|MLB Playoffs - 2026":51532,"Binghamton|Men's College Basketball - 2025-2026":61293,"Binghamton|NHL Regular Season - 2025-2026":47455,"Binghamton|Women's March Madness - 2026":10041,"Birmingham (Ann and Tusc)|College Football - 2026-2027":221425,"Birmingham (Ann and Tusc)|College Football Playoffs - 2026-2027":113290,"Birmingham (Ann and Tusc)|Men's March Madness - 2026":119212,"Birmingham (Ann and Tusc)|NHL Playoffs - 2026":27213,"Birmingham (Ann and Tusc)|NFL - 2026-2027":472663,"Birmingham (Ann and Tusc)|Men's College Basketball - 2025-2026":597621,"Birmingham (Ann and Tusc)|NBA Regular Season - 2025-2026":271587,"Birmingham (Ann and Tusc)|MLB Regular Season - 2026":367480,"Birmingham (Ann and Tusc)|NBA Playoffs - 2026":105545,"Birmingham (Ann and Tusc)|MLB Playoffs - 2026":85142,"Birmingham (Ann and Tusc)|World Cup - 2026":23506,"Birmingham (Ann and Tusc)|NHL Regular Season - 2025-2026":44288,"Birmingham (Ann and Tusc)|Women's March Madness - 2026":60190,"Bismarck-Mnt-Dcknsn(Wlstn)|NBA Playoffs - 2026":3,"Bismarck-Mnt-Dcknsn(Wlstn)|MLB Playoffs - 2026":2,"Bismarck-Mnt-Dcknsn(Wlstn)|College Football - 2026-2027":1,"Bismarck-Mnt-Dcknsn(Wlstn)|NBA Regular Season - 2025-2026":59,"Bismarck-Mnt-Dcknsn(Wlstn)|NFL - 2026-2027":5,"Bismarck-Mnt-Dcknsn(Wlstn)|World Cup - 2026":66,"Bismarck-Mnt-Dcknsn(Wlstn)|MLB Regular Season - 2026":1,"Bluefield-Beckley-Oak Hill|World Cup - 2026":195,"Bluefield-Beckley-Oak Hill|MLB Playoffs - 2026":1661,"Bluefield-Beckley-Oak Hill|College Football - 2026-2027":13975,"Bluefield-Beckley-Oak Hill|Men's March Madness - 2026":1909,"Bluefield-Beckley-Oak Hill|Men's College Basketball - 2025-2026":5206,"Bluefield-Beckley-Oak Hill|NBA Playoffs - 2026":596,"Bluefield-Beckley-Oak Hill|MLB Regular Season - 2026":2586,"Bluefield-Beckley-Oak Hill|NBA Regular Season - 2025-2026":1141,"Bluefield-Beckley-Oak Hill|College Football Playoffs - 2026-2027":830,"Bluefield-Beckley-Oak Hill|NHL Playoffs - 2026":482,"Bluefield-Beckley-Oak Hill|NFL - 2026-2027":9254,"Bluefield-Beckley-Oak Hill|NHL Regular Season - 2025-2026":547,"Bluefield-Beckley-Oak Hill|Women's March Madness - 2026":649,"Boise|NFL - 2026-2027":11,"Boise|College Football Playoffs - 2026-2027":1,"Boise|College Football - 2026-2027":12,"Boise|NBA Regular Season - 2025-2026":1193,"Boise|MLB Playoffs - 2026":32,"Boise|World Cup - 2026":167,"Boise|NBA Playoffs - 2026":10,"Boise|MLB Regular Season - 2026":44,"Boston (Manchester)|World Cup - 2026":39275,"Boston (Manchester)|MLB Playoffs - 2026":86158,"Boston (Manchester)|College Football - 2026-2027":101053,"Boston (Manchester)|Men's March Madness - 2026":34361,"Boston (Manchester)|Men's College Basketball - 2025-2026":53669,"Boston (Manchester)|NBA Playoffs - 2026":48830,"Boston (Manchester)|MLB Regular Season - 2026":324544,"Boston (Manchester)|NBA Regular Season - 2025-2026":178229,"Boston (Manchester)|College Football Playoffs - 2026-2027":7221,"Boston (Manchester)|NHL Playoffs - 2026":72528,"Boston (Manchester)|NFL - 2026-2027":202385,"Boston (Manchester)|NHL Regular Season - 2025-2026":112840,"Boston (Manchester)|Women's March Madness - 2026":13766,"Bowling Green|World Cup - 2026":2869,"Bowling Green|MLB Playoffs - 2026":9411,"Bowling Green|College Football - 2026-2027":51640,"Bowling Green|Men's March Madness - 2026":22174,"Bowling Green|Men's College Basketball - 2025-2026":77849,"Bowling Green|NBA Playoffs - 2026":6097,"Bowling Green|MLB Regular Season - 2026":21934,"Bowling Green|NBA Regular Season - 2025-2026":23081,"Bowling Green|College Football Playoffs - 2026-2027":3050,"Bowling Green|NHL Playoffs - 2026":3889,"Bowling Green|NFL - 2026-2027":34090,"Bowling Green|NHL Regular Season - 2025-2026":5022,"Bowling Green|Women's March Madness - 2026":4273,"Buffalo|Men's March Madness - 2026":88305,"Buffalo|NFL - 2026-2027":882640,"Buffalo|College Football - 2026-2027":396162,"Buffalo|World Cup - 2026":49580,"Buffalo|NBA Playoffs - 2026":86022,"Buffalo|NBA Regular Season - 2025-2026":227242,"Buffalo|MLB Regular Season - 2026":917152,"Buffalo|NHL Playoffs - 2026":449152,"Buffalo|College Football Playoffs - 2026-2027":43473,"Buffalo|MLB Playoffs - 2026":213720,"Buffalo|Men's College Basketball - 2025-2026":209600,"Buffalo|NHL Regular Season - 2025-2026":1004426,"Buffalo|Women's March Madness - 2026":40953,"Burlington-Plattsburgh|World Cup - 2026":7168,"Burlington-Plattsburgh|MLB Playoffs - 2026":40621,"Burlington-Plattsburgh|College Football - 2026-2027":50132,"Burlington-Plattsburgh|Men's March Madness - 2026":17824,"Burlington-Plattsburgh|Men's College Basketball - 2025-2026":35593,"Burlington-Plattsburgh|NBA Playoffs - 2026":10995,"Burlington-Plattsburgh|MLB Regular Season - 2026":203463,"Burlington-Plattsburgh|NBA Regular Season - 2025-2026":38405,"Burlington-Plattsburgh|College Football Playoffs - 2026-2027":3726,"Burlington-Plattsburgh|NHL Playoffs - 2026":41767,"Burlington-Plattsburgh|NFL - 2026-2027":96933,"Burlington-Plattsburgh|NHL Regular Season - 2025-2026":53102,"Burlington-Plattsburgh|Women's March Madness - 2026":8818,"Butte-Bozeman|College Football Playoffs - 2026-2027":2500,"Butte-Bozeman|Men's March Madness - 2026":9527,"Butte-Bozeman|NBA Regular Season - 2025-2026":5795,"Butte-Bozeman|NHL Regular Season - 2025-2026":10792,"Butte-Bozeman|College Football - 2026-2027":34744,"Butte-Bozeman|NFL - 2026-2027":42657,"Butte-Bozeman|MLB Playoffs - 2026":13407,"Butte-Bozeman|MLB Regular Season - 2026":30576,"Butte-Bozeman|NBA Playoffs - 2026":4353,"Butte-Bozeman|Men's College Basketball - 2025-2026":20159,"Butte-Bozeman|NHL Playoffs - 2026":11738,"Butte-Bozeman|World Cup - 2026":2458,"Butte-Bozeman|Women's March Madness - 2026":4342,"Casper-Riverton|Men's March Madness - 2026":4427,"Casper-Riverton|College Football - 2026-2027":29862,"Casper-Riverton|World Cup - 2026":1416,"Casper-Riverton|MLB Playoffs - 2026":5027,"Casper-Riverton|Men's College Basketball - 2025-2026":11761,"Casper-Riverton|NBA Playoffs - 2026":3713,"Casper-Riverton|MLB Regular Season - 2026":16702,"Casper-Riverton|NBA Regular Season - 2025-2026":9601,"Casper-Riverton|College Football Playoffs - 2026-2027":2680,"Casper-Riverton|NHL Playoffs - 2026":8065,"Casper-Riverton|NFL - 2026-2027":37942,"Casper-Riverton|NHL Regular Season - 2025-2026":13068,"Casper-Riverton|Women's March Madness - 2026":2604,"Cedar Rapids-Wtrlo-IWC&Dub|College Football - 2026-2027":9,"Cedar Rapids-Wtrlo-IWC&Dub|NFL - 2026-2027":12,"Cedar Rapids-Wtrlo-IWC&Dub|MLB Playoffs - 2026":4,"Cedar Rapids-Wtrlo-IWC&Dub|World Cup - 2026":157,"Cedar Rapids-Wtrlo-IWC&Dub|NBA Regular Season - 2025-2026":182,"Cedar Rapids-Wtrlo-IWC&Dub|MLB Regular Season - 2026":3,"Champaign&Sprngfld-Decatur|MLB Regular Season - 2026":6,"Champaign&Sprngfld-Decatur|MLB Playoffs - 2026":1,"Champaign&Sprngfld-Decatur|College Football - 2026-2027":5,"Champaign&Sprngfld-Decatur|NBA Regular Season - 2025-2026":225,"Champaign&Sprngfld-Decatur|NBA Playoffs - 2026":1,"Champaign&Sprngfld-Decatur|World Cup - 2026":269,"Charleston, SC|World Cup - 2026":9273,"Charleston, SC|MLB Playoffs - 2026":31500,"Charleston, SC|College Football - 2026-2027":203028,"Charleston, SC|Men's March Madness - 2026":26620,"Charleston, SC|Men's College Basketball - 2025-2026":69052,"Charleston, SC|NBA Playoffs - 2026":20053,"Charleston, SC|MLB Regular Season - 2026":86821,"Charleston, SC|NBA Regular Season - 2025-2026":50080,"Charleston, SC|College Football Playoffs - 2026-2027":12002,"Charleston, SC|NHL Playoffs - 2026":19685,"Charleston, SC|NFL - 2026-2027":131800,"Charleston, SC|NHL Regular Season - 2025-2026":18759,"Charleston, SC|Women's March Madness - 2026":23254,"Charleston-Huntington|World Cup - 2026":2817,"Charleston-Huntington|MLB Playoffs - 2026":24154,"Charleston-Huntington|College Football - 2026-2027":117094,"Charleston-Huntington|Men's March Madness - 2026":27369,"Charleston-Huntington|Men's College Basketball - 2025-2026":82472,"Charleston-Huntington|NBA Playoffs - 2026":7746,"Charleston-Huntington|MLB Regular Season - 2026":151272,"Charleston-Huntington|NBA Regular Season - 2025-2026":25107,"Charleston-Huntington|College Football Playoffs - 2026-2027":9535,"Charleston-Huntington|NHL Playoffs - 2026":4843,"Charleston-Huntington|NFL - 2026-2027":68101,"Charleston-Huntington|NHL Regular Season - 2025-2026":9068,"Charleston-Huntington|Women's March Madness - 2026":6982,"Charlotte|Men's March Madness - 2026":118730,"Charlotte|NHL Regular Season - 2025-2026":203067,"Charlotte|Men's College Basketball - 2025-2026":963576,"Charlotte|World Cup - 2026":159153,"Charlotte|NBA Playoffs - 2026":246140,"Charlotte|NFL - 2026-2027":1377479,"Charlotte|College Football - 2026-2027":1481896,"Charlotte|MLB Playoffs - 2026":306487,"Charlotte|College Football Playoffs - 2026-2027":193500,"Charlotte|MLB Regular Season - 2026":879384,"Charlotte|NHL Playoffs - 2026":228235,"Charlotte|NBA Regular Season - 2025-2026":633744,"Charlotte|Women's March Madness - 2026":150777,"Charlottesville|College Football - 2026-2027":5,"Charlottesville|World Cup - 2026":346,"Charlottesville|NBA Playoffs - 2026":3,"Charlottesville|NBA Regular Season - 2025-2026":13,"Chattanooga|World Cup - 2026":5160,"Chattanooga|MLB Playoffs - 2026":28310,"Chattanooga|College Football - 2026-2027":217647,"Chattanooga|Men's March Madness - 2026":31999,"Chattanooga|Men's College Basketball - 2025-2026":87218,"Chattanooga|NBA Playoffs - 2026":7488,"Chattanooga|MLB Regular Season - 2026":167099,"Chattanooga|NBA Regular Season - 2025-2026":23562,"Chattanooga|College Football Playoffs - 2026-2027":17200,"Chattanooga|NHL Playoffs - 2026":6598,"Chattanooga|NFL - 2026-2027":83247,"Chattanooga|NHL Regular Season - 2025-2026":11495,"Chattanooga|Women's March Madness - 2026":12084,"Cheyenne-Scottsbluff|Men's March Madness - 2026":4576,"Cheyenne-Scottsbluff|NFL - 2026-2027":54763,"Cheyenne-Scottsbluff|College Football - 2026-2027":50977,"Cheyenne-Scottsbluff|World Cup - 2026":1552,"Cheyenne-Scottsbluff|NBA Playoffs - 2026":5935,"Cheyenne-Scottsbluff|NBA Regular Season - 2025-2026":17601,"Cheyenne-Scottsbluff|MLB Regular Season - 2026":23170,"Cheyenne-Scottsbluff|NHL Playoffs - 2026":7579,"Cheyenne-Scottsbluff|College Football Playoffs - 2026-2027":4684,"Cheyenne-Scottsbluff|MLB Playoffs - 2026":7234,"Cheyenne-Scottsbluff|Men's College Basketball - 2025-2026":16404,"Cheyenne-Scottsbluff|NHL Regular Season - 2025-2026":16837,"Cheyenne-Scottsbluff|Women's March Madness - 2026":2459,"Chicago|Men's March Madness - 2026":-98213,"Chicago|NHL Playoffs - 2026":1009,"Chicago|College Football - 2026-2027":4408,"Chicago|World Cup - 2026":8698,"Chicago|Men's College Basketball - 2025-2026":2570,"Chicago|NBA Regular Season - 2025-2026":3162,"Chicago|MLB Regular Season - 2026":2929,"Chicago|College Football Playoffs - 2026-2027":338,"Chicago|NBA Playoffs - 2026":588,"Chicago|MLB Playoffs - 2026":4013,"Chicago|NFL - 2026-2027":10454,"Chicago|NHL Regular Season - 2025-2026":1312,"Chicago|Women's March Madness - 2026":307,"Chico-Redding|World Cup - 2026":2836,"Chico-Redding|MLB Playoffs - 2026":13936,"Chico-Redding|College Football - 2026-2027":28374,"Chico-Redding|Men's March Madness - 2026":4944,"Chico-Redding|Men's College Basketball - 2025-2026":12479,"Chico-Redding|NBA Playoffs - 2026":7600,"Chico-Redding|MLB Regular Season - 2026":80674,"Chico-Redding|NBA Regular Season - 2025-2026":24955,"Chico-Redding|College Football Playoffs - 2026-2027":4147,"Chico-Redding|NHL Playoffs - 2026":3691,"Chico-Redding|NFL - 2026-2027":58528,"Chico-Redding|NHL Regular Season - 2025-2026":4609,"Chico-Redding|Women's March Madness - 2026":1877,"Cincinnati|Men's March Madness - 2026":144835,"Cincinnati|NFL - 2026-2027":843350,"Cincinnati|College Football - 2026-2027":932015,"Cincinnati|World Cup - 2026":91961,"Cincinnati|NBA Playoffs - 2026":114888,"Cincinnati|NBA Regular Season - 2025-2026":366106,"Cincinnati|MLB Regular Season - 2026":2078440,"Cincinnati|NHL Playoffs - 2026":94109,"Cincinnati|College Football Playoffs - 2026-2027":141658,"Cincinnati|MLB Playoffs - 2026":333858,"Cincinnati|Men's College Basketball - 2025-2026":747857,"Cincinnati|NHL Regular Season - 2025-2026":112672,"Cincinnati|Women's March Madness - 2026":58911,"Clarksburg-Weston|World Cup - 2026":502,"Clarksburg-Weston|MLB Playoffs - 2026":3839,"Clarksburg-Weston|College Football - 2026-2027":41712,"Clarksburg-Weston|Men's March Madness - 2026":5156,"Clarksburg-Weston|Men's College Basketball - 2025-2026":17040,"Clarksburg-Weston|NBA Playoffs - 2026":2048,"Clarksburg-Weston|MLB Regular Season - 2026":15708,"Clarksburg-Weston|NBA Regular Season - 2025-2026":5160,"Clarksburg-Weston|College Football Playoffs - 2026-2027":2310,"Clarksburg-Weston|NHL Playoffs - 2026":1828,"Clarksburg-Weston|NFL - 2026-2027":27153,"Clarksburg-Weston|NHL Regular Season - 2025-2026":3556,"Clarksburg-Weston|Women's March Madness - 2026":2200,"Cleveland-Akron (Canton)|Men's March Madness - 2026":49269,"Cleveland-Akron (Canton)|MLB Regular Season - 2026":3376243,"Cleveland-Akron (Canton)|NBA Regular Season - 2025-2026":2471382,"Cleveland-Akron (Canton)|NBA Playoffs - 2026":500635,"Cleveland-Akron (Canton)|NFL - 2026-2027":1678181,"Cleveland-Akron (Canton)|College Football - 2026-2027":1674012,"Cleveland-Akron (Canton)|Men's College Basketball - 2025-2026":511565,"Cleveland-Akron (Canton)|MLB Playoffs - 2026":629236,"Cleveland-Akron (Canton)|College Football Playoffs - 2026-2027":235759,"Cleveland-Akron (Canton)|NHL Playoffs - 2026":155116,"Cleveland-Akron (Canton)|World Cup - 2026":100575,"Cleveland-Akron (Canton)|NHL Regular Season - 2025-2026":193295,"Cleveland-Akron (Canton)|Women's March Madness - 2026":101620,"Colorado Springs-Pueblo|World Cup - 2026":825,"Colorado Springs-Pueblo|MLB Playoffs - 2026":3319,"Colorado Springs-Pueblo|College Football - 2026-2027":13916,"Colorado Springs-Pueblo|Men's March Madness - 2026":2495,"Colorado Springs-Pueblo|Men's College Basketball - 2025-2026":4518,"Colorado Springs-Pueblo|NBA Playoffs - 2026":3547,"Colorado Springs-Pueblo|MLB Regular Season - 2026":13967,"Colorado Springs-Pueblo|NBA Regular Season - 2025-2026":16445,"Colorado Springs-Pueblo|College Football Playoffs - 2026-2027":816,"Colorado Springs-Pueblo|NHL Playoffs - 2026":4976,"Colorado Springs-Pueblo|NFL - 2026-2027":25311,"Colorado Springs-Pueblo|NHL Regular Season - 2025-2026":14661,"Colorado Springs-Pueblo|Women's March Madness - 2026":756,"Columbia, SC|Men's March Madness - 2026":20038,"Columbia, SC|Women's March Madness - 2026":166200,"Columbia, SC|Men's College Basketball - 2025-2026":284908,"Columbia, SC|College Football - 2026-2027":838612,"Columbia, SC|NBA Regular Season - 2025-2026":248331,"Columbia, SC|College Football Playoffs - 2026-2027":56978,"Columbia, SC|NHL Playoffs - 2026":32408,"Columbia, SC|MLB Regular Season - 2026":250742,"Columbia, SC|NHL Regular Season - 2025-2026":39387,"Columbia, SC|MLB Playoffs - 2026":70832,"Columbia, SC|NFL - 2026-2027":434463,"Columbia, SC|NBA Playoffs - 2026":96078,"Columbia, SC|World Cup - 2026":27709,"Columbia-Jefferson City|World Cup - 2026":1867,"Columbia-Jefferson City|MLB Playoffs - 2026":6132,"Columbia-Jefferson City|College Football - 2026-2027":33565,"Columbia-Jefferson City|Men's March Madness - 2026":7422,"Columbia-Jefferson City|Men's College Basketball - 2025-2026":21608,"Columbia-Jefferson City|NBA Playoffs - 2026":2759,"Columbia-Jefferson City|MLB Regular Season - 2026":58516,"Columbia-Jefferson City|NBA Regular Season - 2025-2026":8285,"Columbia-Jefferson City|College Football Playoffs - 2026-2027":1785,"Columbia-Jefferson City|NHL Playoffs - 2026":4470,"Columbia-Jefferson City|NFL - 2026-2027":30928,"Columbia-Jefferson City|NHL Regular Season - 2025-2026":7768,"Columbia-Jefferson City|Women's March Madness - 2026":2314,"Columbus, GA (Opelika, AL)|World Cup - 2026":4531,"Columbus, GA (Opelika, AL)|MLB Playoffs - 2026":19095,"Columbus, GA (Opelika, AL)|College Football - 2026-2027":246933,"Columbus, GA (Opelika, AL)|Men's March Madness - 2026":40674,"Columbus, GA (Opelika, AL)|Men's College Basketball - 2025-2026":135496,"Columbus, GA (Opelika, AL)|NBA Playoffs - 2026":19936,"Columbus, GA (Opelika, AL)|MLB Regular Season - 2026":122485,"Columbus, GA (Opelika, AL)|NBA Regular Season - 2025-2026":61905,"Columbus, GA (Opelika, AL)|College Football Playoffs - 2026-2027":20464,"Columbus, GA (Opelika, AL)|NHL Playoffs - 2026":7169,"Columbus, GA (Opelika, AL)|NFL - 2026-2027":98128,"Columbus, GA (Opelika, AL)|NHL Regular Season - 2025-2026":9401,"Columbus, GA (Opelika, AL)|Women's March Madness - 2026":12686,"Columbus, OH|Men's March Madness - 2026":-528869,"Columbus, OH|College Football Playoffs - 2026-2027":200984,"Columbus, OH|NFL - 2026-2027":819490,"Columbus, OH|NHL Playoffs - 2026":155459,"Columbus, OH|College Football - 2026-2027":1429318,"Columbus, OH|NHL Regular Season - 2025-2026":322602,"Columbus, OH|MLB Playoffs - 2026":286351,"Columbus, OH|MLB Regular Season - 2026":1303157,"Columbus, OH|World Cup - 2026":132977,"Columbus, OH|NBA Regular Season - 2025-2026":621084,"Columbus, OH|Men's College Basketball - 2025-2026":641991,"Columbus, OH|NBA Playoffs - 2026":165246,"Columbus, OH|Women's March Madness - 2026":111215,"Columbus-Tupelo-West Point|World Cup - 2026":57,"Columbus-Tupelo-West Point|MLB Playoffs - 2026":187,"Columbus-Tupelo-West Point|College Football - 2026-2027":2749,"Columbus-Tupelo-West Point|Men's March Madness - 2026":288,"Columbus-Tupelo-West Point|Men's College Basketball - 2025-2026":1345,"Columbus-Tupelo-West Point|NBA Playoffs - 2026":124,"Columbus-Tupelo-West Point|MLB Regular Season - 2026":240,"Columbus-Tupelo-West Point|NBA Regular Season - 2025-2026":299,"Columbus-Tupelo-West Point|College Football Playoffs - 2026-2027":285,"Columbus-Tupelo-West Point|NHL Playoffs - 2026":20,"Columbus-Tupelo-West Point|NFL - 2026-2027":716,"Columbus-Tupelo-West Point|NHL Regular Season - 2025-2026":25,"Columbus-Tupelo-West Point|Women's March Madness - 2026":118,"Corpus Christi|Men's March Madness - 2026":-39210,"Corpus Christi|World Cup - 2026":6443,"Corpus Christi|NFL - 2026-2027":177144,"Corpus Christi|College Football - 2026-2027":181313,"Corpus Christi|NBA Playoffs - 2026":22661,"Corpus Christi|College Football Playoffs - 2026-2027":53335,"Corpus Christi|NHL Playoffs - 2026":16442,"Corpus Christi|MLB Regular Season - 2026":104016,"Corpus Christi|MLB Playoffs - 2026":43079,"Corpus Christi|NBA Regular Season - 2025-2026":59909,"Corpus Christi|Men's College Basketball - 2025-2026":51958,"Corpus Christi|NHL Regular Season - 2025-2026":13816,"Corpus Christi|Women's March Madness - 2026":14716,"Dallas-Ft. Worth|World Cup - 2026":181761,"Dallas-Ft. Worth|MLB Playoffs - 2026":335755,"Dallas-Ft. Worth|College Football - 2026-2027":1804533,"Dallas-Ft. Worth|Men's March Madness - 2026":176642,"Dallas-Ft. Worth|Men's College Basketball - 2025-2026":649451,"Dallas-Ft. Worth|NBA Playoffs - 2026":348442,"Dallas-Ft. Worth|MLB Regular Season - 2026":2709169,"Dallas-Ft. Worth|NBA Regular Season - 2025-2026":613433,"Dallas-Ft. Worth|College Football Playoffs - 2026-2027":614966,"Dallas-Ft. Worth|NHL Playoffs - 2026":453712,"Dallas-Ft. Worth|NFL - 2026-2027":1683021,"Dallas-Ft. Worth|NHL Regular Season - 2025-2026":204209,"Dallas-Ft. Worth|Women's March Madness - 2026":189219,"Davenport-R.Island-Moline|MLB Regular Season - 2026":8,"Davenport-R.Island-Moline|NBA Playoffs - 2026":16,"Davenport-R.Island-Moline|NFL - 2026-2027":6,"Davenport-R.Island-Moline|NBA Regular Season - 2025-2026":97,"Davenport-R.Island-Moline|World Cup - 2026":39,"Dayton|Men's March Madness - 2026":-17886,"Dayton|NFL - 2026-2027":461419,"Dayton|College Football - 2026-2027":609665,"Dayton|World Cup - 2026":34427,"Dayton|NBA Playoffs - 2026":71498,"Dayton|NBA Regular Season - 2025-2026":205880,"Dayton|MLB Regular Season - 2026":908146,"Dayton|NHL Playoffs - 2026":61815,"Dayton|College Football Playoffs - 2026-2027":80175,"Dayton|MLB Playoffs - 2026":159750,"Dayton|Men's College Basketball - 2025-2026":422973,"Dayton|NHL Regular Season - 2025-2026":89972,"Dayton|Women's March Madness - 2026":48114,"Denver|World Cup - 2026":11902,"Denver|MLB Playoffs - 2026":15374,"Denver|College Football - 2026-2027":68858,"Denver|Men's March Madness - 2026":14348,"Denver|Men's College Basketball - 2025-2026":27908,"Denver|NBA Playoffs - 2026":13365,"Denver|MLB Regular Season - 2026":45591,"Denver|NBA Regular Season - 2025-2026":54773,"Denver|College Football Playoffs - 2026-2027":4100,"Denver|NHL Playoffs - 2026":17661,"Denver|NFL - 2026-2027":81538,"Denver|NHL Regular Season - 2025-2026":42970,"Denver|Women's March Madness - 2026":4217,"Des Moines-Ames|College Football - 2026-2027":7,"Des Moines-Ames|NFL - 2026-2027":6,"Des Moines-Ames|MLB Playoffs - 2026":10,"Des Moines-Ames|World Cup - 2026":404,"Des Moines-Ames|NBA Regular Season - 2025-2026":88,"Des Moines-Ames|MLB Regular Season - 2026":33,"Detroit|NHL Playoffs - 2026":35313,"Detroit|MLB Regular Season - 2026":792308,"Detroit|Men's College Basketball - 2025-2026":123097,"Detroit|Men's March Madness - 2026":72023,"Detroit|NBA Playoffs - 2026":37006,"Detroit|World Cup - 2026":22877,"Detroit|NBA Regular Season - 2025-2026":161310,"Detroit|College Football - 2026-2027":232608,"Detroit|College Football Playoffs - 2026-2027":14614,"Detroit|MLB Playoffs - 2026":134470,"Detroit|NFL - 2026-2027":251064,"Detroit|NHL Regular Season - 2025-2026":217821,"Detroit|Women's March Madness - 2026":9440,"Dothan|World Cup - 2026":1587,"Dothan|MLB Playoffs - 2026":9286,"Dothan|College Football - 2026-2027":113860,"Dothan|Men's March Madness - 2026":13985,"Dothan|Men's College Basketball - 2025-2026":46492,"Dothan|NBA Playoffs - 2026":5992,"Dothan|MLB Regular Season - 2026":49307,"Dothan|NBA Regular Season - 2025-2026":18213,"Dothan|College Football Playoffs - 2026-2027":10856,"Dothan|NHL Playoffs - 2026":3409,"Dothan|NFL - 2026-2027":39957,"Dothan|NHL Regular Season - 2025-2026":3395,"Dothan|Women's March Madness - 2026":4455,"Duluth-Superior|Men's March Madness - 2026":8774,"Duluth-Superior|NFL - 2026-2027":63283,"Duluth-Superior|MLB Regular Season - 2026":75124,"Duluth-Superior|College Football Playoffs - 2026-2027":5868,"Duluth-Superior|World Cup - 2026":2611,"Duluth-Superior|NBA Regular Season - 2025-2026":21590,"Duluth-Superior|College Football - 2026-2027":38624,"Duluth-Superior|NHL Playoffs - 2026":28290,"Duluth-Superior|MLB Playoffs - 2026":21497,"Duluth-Superior|NHL Regular Season - 2025-2026":38555,"Duluth-Superior|Men's College Basketball - 2025-2026":19853,"Duluth-Superior|Women's March Madness - 2026":3409,"Duluth-Superior|NBA Playoffs - 2026":0,"El Paso (Las Cruces)|Men's March Madness - 2026":2581,"El Paso (Las Cruces)|College Football - 2026-2027":162461,"El Paso (Las Cruces)|World Cup - 2026":18028,"El Paso (Las Cruces)|MLB Playoffs - 2026":80223,"El Paso (Las Cruces)|Men's College Basketball - 2025-2026":65406,"El Paso (Las Cruces)|NBA Playoffs - 2026":34891,"El Paso (Las Cruces)|MLB Regular Season - 2026":135170,"El Paso (Las Cruces)|NBA Regular Season - 2025-2026":78911,"El Paso (Las Cruces)|College Football Playoffs - 2026-2027":22827,"El Paso (Las Cruces)|NHL Playoffs - 2026":19388,"El Paso (Las Cruces)|NFL - 2026-2027":259064,"El Paso (Las Cruces)|NHL Regular Season - 2025-2026":18614,"El Paso (Las Cruces)|Women's March Madness - 2026":14583,"Elmira (Corning)|Men's March Madness - 2026":9657,"Elmira (Corning)|NFL - 2026-2027":106201,"Elmira (Corning)|College Football - 2026-2027":54391,"Elmira (Corning)|World Cup - 2026":5856,"Elmira (Corning)|NBA Playoffs - 2026":8543,"Elmira (Corning)|NBA Regular Season - 2025-2026":26150,"Elmira (Corning)|MLB Regular Season - 2026":197885,"Elmira (Corning)|NHL Playoffs - 2026":18106,"Elmira (Corning)|College Football Playoffs - 2026-2027":6152,"Elmira (Corning)|MLB Playoffs - 2026":29490,"Elmira (Corning)|Men's College Basketball - 2025-2026":33754,"Elmira (Corning)|NHL Regular Season - 2025-2026":24923,"Elmira (Corning)|Women's March Madness - 2026":5670,"Erie|NFL - 2026-2027":14402,"Erie|Men's March Madness - 2026":12081,"Erie|College Football - 2026-2027":88203,"Erie|World Cup - 2026":7093,"Erie|Men's College Basketball - 2025-2026":39425,"Erie|NBA Regular Season - 2025-2026":44699,"Erie|MLB Regular Season - 2026":132683,"Erie|NHL Playoffs - 2026":31838,"Erie|NBA Playoffs - 2026":13276,"Erie|College Football Playoffs - 2026-2027":14486,"Erie|MLB Playoffs - 2026":28041,"Erie|NHL Regular Season - 2025-2026":40054,"Erie|Women's March Madness - 2026":6982,"Eugene|World Cup - 2026":2084,"Eugene|MLB Playoffs - 2026":22081,"Eugene|College Football - 2026-2027":69680,"Eugene|Men's March Madness - 2026":10194,"Eugene|Men's College Basketball - 2025-2026":23206,"Eugene|NBA Playoffs - 2026":5474,"Eugene|MLB Regular Season - 2026":84886,"Eugene|NBA Regular Season - 2025-2026":16741,"Eugene|College Football Playoffs - 2026-2027":8999,"Eugene|NHL Playoffs - 2026":5100,"Eugene|NFL - 2026-2027":64082,"Eugene|NHL Regular Season - 2025-2026":5381,"Eugene|Women's March Madness - 2026":4442,"Eureka|World Cup - 2026":232,"Eureka|MLB Playoffs - 2026":1537,"Eureka|College Football - 2026-2027":2894,"Eureka|Men's March Madness - 2026":757,"Eureka|Men's College Basketball - 2025-2026":1562,"Eureka|NBA Playoffs - 2026":1044,"Eureka|MLB Regular Season - 2026":8698,"Eureka|NBA Regular Season - 2025-2026":3932,"Eureka|College Football Playoffs - 2026-2027":291,"Eureka|NHL Playoffs - 2026":445,"Eureka|NFL - 2026-2027":7103,"Eureka|NHL Regular Season - 2025-2026":530,"Eureka|Women's March Madness - 2026":271,"Evansville|Men's March Madness - 2026":31501,"Evansville|College Football - 2026-2027":158921,"Evansville|World Cup - 2026":6437,"Evansville|MLB Playoffs - 2026":46442,"Evansville|Men's College Basketball - 2025-2026":273964,"Evansville|NBA Playoffs - 2026":22709,"Evansville|MLB Regular Season - 2026":145740,"Evansville|NBA Regular Season - 2025-2026":68706,"Evansville|College Football Playoffs - 2026-2027":11561,"Evansville|NHL Playoffs - 2026":13890,"Evansville|NFL - 2026-2027":136850,"Evansville|NHL Regular Season - 2025-2026":16544,"Evansville|Women's March Madness - 2026":15101,"Fairbanks|MLB Regular Season - 2026":6,"Fairbanks|World Cup - 2026":14,"Fairbanks|NBA Playoffs - 2026":5,"Fairbanks|NBA Regular Season - 2025-2026":7,"Fargo|World Cup - 2026":291,"Fargo|MLB Playoffs - 2026":916,"Fargo|College Football - 2026-2027":2972,"Fargo|Men's March Madness - 2026":770,"Fargo|Men's College Basketball - 2025-2026":1326,"Fargo|NBA Playoffs - 2026":1150,"Fargo|MLB Regular Season - 2026":5942,"Fargo|NBA Regular Season - 2025-2026":2834,"Fargo|College Football Playoffs - 2026-2027":128,"Fargo|NHL Playoffs - 2026":1819,"Fargo|NFL - 2026-2027":4827,"Fargo|NHL Regular Season - 2025-2026":4698,"Fargo|Women's March Madness - 2026":412,"Flint-Saginaw-Bay City|College Football Playoffs - 2026-2027":20588,"Flint-Saginaw-Bay City|Men's March Madness - 2026":97557,"Flint-Saginaw-Bay City|NFL - 2026-2027":402010,"Flint-Saginaw-Bay City|College Football - 2026-2027":373403,"Flint-Saginaw-Bay City|World Cup - 2026":19475,"Flint-Saginaw-Bay City|NBA Playoffs - 2026":54554,"Flint-Saginaw-Bay City|NHL Playoffs - 2026":95314,"Flint-Saginaw-Bay City|MLB Regular Season - 2026":1206988,"Flint-Saginaw-Bay City|MLB Playoffs - 2026":203590,"Flint-Saginaw-Bay City|NBA Regular Season - 2025-2026":198997,"Flint-Saginaw-Bay City|Men's College Basketball - 2025-2026":233492,"Flint-Saginaw-Bay City|NHL Regular Season - 2025-2026":228583,"Flint-Saginaw-Bay City|Women's March Madness - 2026":21740,"Fresno-Visalia|World Cup - 2026":1531,"Fresno-Visalia|MLB Playoffs - 2026":10764,"Fresno-Visalia|College Football - 2026-2027":9753,"Fresno-Visalia|Men's March Madness - 2026":1571,"Fresno-Visalia|Men's College Basketball - 2025-2026":3747,"Fresno-Visalia|NBA Playoffs - 2026":4329,"Fresno-Visalia|MLB Regular Season - 2026":271424,"Fresno-Visalia|NBA Regular Season - 2025-2026":74728,"Fresno-Visalia|College Football Playoffs - 2026-2027":692,"Fresno-Visalia|NHL Playoffs - 2026":1354,"Fresno-Visalia|NFL - 2026-2027":28481,"Fresno-Visalia|NHL Regular Season - 2025-2026":1864,"Fresno-Visalia|Women's March Madness - 2026":664,"Ft. Myers-Naples|College Football Playoffs - 2026-2027":8,"Ft. Myers-Naples|MLB Regular Season - 2026":4,"Ft. Myers-Naples|NFL - 2026-2027":113,"Ft. Myers-Naples|NBA Playoffs - 2026":6,"Ft. Myers-Naples|College Football - 2026-2027":68,"Ft. Myers-Naples|NBA Regular Season - 2025-2026":81,"Ft. Myers-Naples|MLB Playoffs - 2026":35,"Ft. Myers-Naples|NHL Playoffs - 2026":1,"Ft. Myers-Naples|Men's College Basketball - 2025-2026":9,"Ft. Myers-Naples|World Cup - 2026":1475,"Ft. Smith-Fay-Sprngdl-Rgrs|Men's College Basketball - 2025-2026":3,"Ft. Smith-Fay-Sprngdl-Rgrs|College Football Playoffs - 2026-2027":2,"Ft. Smith-Fay-Sprngdl-Rgrs|College Football - 2026-2027":3,"Ft. Smith-Fay-Sprngdl-Rgrs|NBA Regular Season - 2025-2026":71,"Ft. Smith-Fay-Sprngdl-Rgrs|MLB Playoffs - 2026":0,"Ft. Smith-Fay-Sprngdl-Rgrs|World Cup - 2026":278,"Ft. Smith-Fay-Sprngdl-Rgrs|MLB Regular Season - 2026":0,"Ft. Wayne|World Cup - 2026":419,"Ft. Wayne|MLB Playoffs - 2026":3476,"Ft. Wayne|College Football - 2026-2027":12556,"Ft. Wayne|Men's March Madness - 2026":2569,"Ft. Wayne|Men's College Basketball - 2025-2026":7326,"Ft. Wayne|NBA Playoffs - 2026":947,"Ft. Wayne|MLB Regular Season - 2026":16778,"Ft. Wayne|NBA Regular Season - 2025-2026":2678,"Ft. Wayne|College Football Playoffs - 2026-2027":1089,"Ft. Wayne|NHL Playoffs - 2026":1109,"Ft. Wayne|NFL - 2026-2027":7838,"Ft. Wayne|NHL Regular Season - 2025-2026":1964,"Ft. Wayne|Women's March Madness - 2026":626,"Gainesville|World Cup - 2026":543,"Gainesville|MLB Playoffs - 2026":256,"Gainesville|College Football - 2026-2027":3259,"Gainesville|Men's March Madness - 2026":163,"Gainesville|Men's College Basketball - 2025-2026":290,"Gainesville|NBA Playoffs - 2026":23,"Gainesville|MLB Regular Season - 2026":729,"Gainesville|NBA Regular Season - 2025-2026":64,"Gainesville|College Football Playoffs - 2026-2027":165,"Gainesville|NHL Playoffs - 2026":113,"Gainesville|NFL - 2026-2027":1208,"Gainesville|NHL Regular Season - 2025-2026":67,"Gainesville|Women's March Madness - 2026":36,"Grand Junction-Montrose|NFL - 2026-2027":69436,"Grand Junction-Montrose|MLB Regular Season - 2026":35390,"Grand Junction-Montrose|Men's College Basketball - 2025-2026":16996,"Grand Junction-Montrose|College Football Playoffs - 2026-2027":3064,"Grand Junction-Montrose|NBA Playoffs - 2026":10289,"Grand Junction-Montrose|World Cup - 2026":2468,"Grand Junction-Montrose|NBA Regular Season - 2025-2026":48577,"Grand Junction-Montrose|College Football - 2026-2027":44432,"Grand Junction-Montrose|NHL Playoffs - 2026":16817,"Grand Junction-Montrose|Men's March Madness - 2026":9239,"Grand Junction-Montrose|MLB Playoffs - 2026":12480,"Grand Junction-Montrose|NHL Regular Season - 2025-2026":48187,"Grand Junction-Montrose|Women's March Madness - 2026":2544,"Grand Rapids-Kalmzoo-B.Crk|NHL Playoffs - 2026":40532,"Grand Rapids-Kalmzoo-B.Crk|MLB Regular Season - 2026":769729,"Grand Rapids-Kalmzoo-B.Crk|Men's College Basketball - 2025-2026":199656,"Grand Rapids-Kalmzoo-B.Crk|Men's March Madness - 2026":114924,"Grand Rapids-Kalmzoo-B.Crk|NBA Playoffs - 2026":33527,"Grand Rapids-Kalmzoo-B.Crk|World Cup - 2026":22638,"Grand Rapids-Kalmzoo-B.Crk|NBA Regular Season - 2025-2026":125461,"Grand Rapids-Kalmzoo-B.Crk|College Football - 2026-2027":317637,"Grand Rapids-Kalmzoo-B.Crk|College Football Playoffs - 2026-2027":20408,"Grand Rapids-Kalmzoo-B.Crk|MLB Playoffs - 2026":143679,"Grand Rapids-Kalmzoo-B.Crk|NFL - 2026-2027":334841,"Grand Rapids-Kalmzoo-B.Crk|NHL Regular Season - 2025-2026":148640,"Grand Rapids-Kalmzoo-B.Crk|Women's March Madness - 2026":16748,"Great Falls|Men's March Madness - 2026":4503,"Great Falls|College Football Playoffs - 2026-2027":2740,"Great Falls|NBA Regular Season - 2025-2026":4117,"Great Falls|College Football - 2026-2027":22202,"Great Falls|NFL - 2026-2027":31073,"Great Falls|MLB Regular Season - 2026":18280,"Great Falls|NHL Playoffs - 2026":5391,"Great Falls|NBA Playoffs - 2026":2064,"Great Falls|Men's College Basketball - 2025-2026":11808,"Great Falls|MLB Playoffs - 2026":7122,"Great Falls|World Cup - 2026":572,"Great Falls|NHL Regular Season - 2025-2026":7284,"Great Falls|Women's March Madness - 2026":2308,"Green Bay-Appleton|Men's March Madness - 2026":137209,"Green Bay-Appleton|College Football Playoffs - 2026-2027":40172,"Green Bay-Appleton|College Football - 2026-2027":336020,"Green Bay-Appleton|NFL - 2026-2027":489588,"Green Bay-Appleton|Men's College Basketball - 2025-2026":261271,"Green Bay-Appleton|MLB Regular Season - 2026":1558421,"Green Bay-Appleton|MLB Playoffs - 2026":411098,"Green Bay-Appleton|NBA Playoffs - 2026":61330,"Green Bay-Appleton|NBA Regular Season - 2025-2026":238365,"Green Bay-Appleton|NHL Playoffs - 2026":77579,"Green Bay-Appleton|World Cup - 2026":25178,"Green Bay-Appleton|NHL Regular Season - 2025-2026":74167,"Green Bay-Appleton|Women's March Madness - 2026":25600,"Greensboro-H.Point-W.Salem|Men's March Madness - 2026":87921,"Greensboro-H.Point-W.Salem|Men's College Basketball - 2025-2026":683289,"Greensboro-H.Point-W.Salem|World Cup - 2026":48065,"Greensboro-H.Point-W.Salem|NHL Regular Season - 2025-2026":122685,"Greensboro-H.Point-W.Salem|NFL - 2026-2027":751436,"Greensboro-H.Point-W.Salem|College Football - 2026-2027":883284,"Greensboro-H.Point-W.Salem|MLB Playoffs - 2026":168166,"Greensboro-H.Point-W.Salem|MLB Regular Season - 2026":466576,"Greensboro-H.Point-W.Salem|College Football Playoffs - 2026-2027":100925,"Greensboro-H.Point-W.Salem|NBA Playoffs - 2026":131632,"Greensboro-H.Point-W.Salem|NHL Playoffs - 2026":131081,"Greensboro-H.Point-W.Salem|NBA Regular Season - 2025-2026":345046,"Greensboro-H.Point-W.Salem|Women's March Madness - 2026":103221,"Greenville-N.Bern-Washngtn|Men's March Madness - 2026":44592,"Greenville-N.Bern-Washngtn|College Football - 2026-2027":215734,"Greenville-N.Bern-Washngtn|Men's College Basketball - 2025-2026":163656,"Greenville-N.Bern-Washngtn|MLB Playoffs - 2026":51913,"Greenville-N.Bern-Washngtn|World Cup - 2026":16294,"Greenville-N.Bern-Washngtn|NBA Playoffs - 2026":26033,"Greenville-N.Bern-Washngtn|MLB Regular Season - 2026":71722,"Greenville-N.Bern-Washngtn|NBA Regular Season - 2025-2026":63361,"Greenville-N.Bern-Washngtn|College Football Playoffs - 2026-2027":20989,"Greenville-N.Bern-Washngtn|NHL Playoffs - 2026":52319,"Greenville-N.Bern-Washngtn|NFL - 2026-2027":195928,"Greenville-N.Bern-Washngtn|NHL Regular Season - 2025-2026":50530,"Greenville-N.Bern-Washngtn|Women's March Madness - 2026":22413,"Greenvll-Spart-Ashevll-And|Men's March Madness - 2026":53690,"Greenvll-Spart-Ashevll-And|World Cup - 2026":28189,"Greenvll-Spart-Ashevll-And|NFL - 2026-2027":507638,"Greenvll-Spart-Ashevll-And|College Football - 2026-2027":1105294,"Greenvll-Spart-Ashevll-And|Men's College Basketball - 2025-2026":421228,"Greenvll-Spart-Ashevll-And|MLB Regular Season - 2026":536067,"Greenvll-Spart-Ashevll-And|College Football Playoffs - 2026-2027":220231,"Greenvll-Spart-Ashevll-And|NHL Playoffs - 2026":74730,"Greenvll-Spart-Ashevll-And|NBA Regular Season - 2025-2026":195250,"Greenvll-Spart-Ashevll-And|MLB Playoffs - 2026":149861,"Greenvll-Spart-Ashevll-And|NBA Playoffs - 2026":82985,"Greenvll-Spart-Ashevll-And|NHL Regular Season - 2025-2026":78769,"Greenvll-Spart-Ashevll-And|Women's March Madness - 2026":117733,"Harlingen-Wslco-Brnsvl-Mca|Men's March Madness - 2026":361,"Harlingen-Wslco-Brnsvl-Mca|NBA Playoffs - 2026":7292,"Harlingen-Wslco-Brnsvl-Mca|MLB Playoffs - 2026":16574,"Harlingen-Wslco-Brnsvl-Mca|NFL - 2026-2027":140314,"Harlingen-Wslco-Brnsvl-Mca|College Football Playoffs - 2026-2027":39485,"Harlingen-Wslco-Brnsvl-Mca|World Cup - 2026":7999,"Harlingen-Wslco-Brnsvl-Mca|College Football - 2026-2027":226342,"Harlingen-Wslco-Brnsvl-Mca|NBA Regular Season - 2025-2026":77977,"Harlingen-Wslco-Brnsvl-Mca|Men's College Basketball - 2025-2026":79576,"Harlingen-Wslco-Brnsvl-Mca|NHL Playoffs - 2026":20889,"Harlingen-Wslco-Brnsvl-Mca|MLB Regular Season - 2026":222976,"Harlingen-Wslco-Brnsvl-Mca|NHL Regular Season - 2025-2026":20132,"Harlingen-Wslco-Brnsvl-Mca|Women's March Madness - 2026":18003,"Harrisburg-Lncstr-Leb-York|NBA Regular Season - 2025-2026":74,"Harrisburg-Lncstr-Leb-York|MLB Playoffs - 2026":3,"Harrisburg-Lncstr-Leb-York|College Football Playoffs - 2026-2027":2,"Harrisburg-Lncstr-Leb-York|World Cup - 2026":692,"Harrisburg-Lncstr-Leb-York|NFL - 2026-2027":6,"Harrisburg-Lncstr-Leb-York|MLB Regular Season - 2026":2,"Harrisburg-Lncstr-Leb-York|College Football - 2026-2027":5,"Harrisonburg|NBA Regular Season - 2025-2026":6,"Harrisonburg|College Football - 2026-2027":3,"Harrisonburg|World Cup - 2026":44,"Hartford & New Haven|NHL Playoffs - 2026":16033,"Hartford & New Haven|MLB Regular Season - 2026":209065,"Hartford & New Haven|Men's College Basketball - 2025-2026":43762,"Hartford & New Haven|Men's March Madness - 2026":20934,"Hartford & New Haven|NBA Playoffs - 2026":10218,"Hartford & New Haven|World Cup - 2026":13577,"Hartford & New Haven|NBA Regular Season - 2025-2026":29671,"Hartford & New Haven|College Football - 2026-2027":39749,"Hartford & New Haven|College Football Playoffs - 2026-2027":2685,"Hartford & New Haven|MLB Playoffs - 2026":37000,"Hartford & New Haven|NFL - 2026-2027":78776,"Hartford & New Haven|NHL Regular Season - 2025-2026":30640,"Hartford & New Haven|Women's March Madness - 2026":21633,"Hattiesburg-Laurel|World Cup - 2026":13,"Helena|College Football Playoffs - 2026-2027":-1491,"Helena|NBA Regular Season - 2025-2026":2759,"Helena|Men's March Madness - 2026":5510,"Helena|College Football - 2026-2027":17891,"Helena|NFL - 2026-2027":26733,"Helena|NHL Regular Season - 2025-2026":8544,"Helena|NHL Playoffs - 2026":6788,"Helena|MLB Playoffs - 2026":8755,"Helena|NBA Playoffs - 2026":2174,"Helena|World Cup - 2026":1205,"Helena|Men's College Basketball - 2025-2026":11585,"Helena|MLB Regular Season - 2026":21033,"Helena|Women's March Madness - 2026":2391,"Honolulu|Men's March Madness - 2026":6374,"Honolulu|MLB Playoffs - 2026":113488,"Honolulu|College Football Playoffs - 2026-2027":43432,"Honolulu|NFL - 2026-2027":541883,"Honolulu|NBA Playoffs - 2026":99000,"Honolulu|NBA Regular Season - 2025-2026":1003784,"Honolulu|College Football - 2026-2027":722258,"Honolulu|MLB Regular Season - 2026":3331262,"Honolulu|NHL Playoffs - 2026":41380,"Honolulu|Men's College Basketball - 2025-2026":178232,"Honolulu|World Cup - 2026":23995,"Honolulu|NHL Regular Season - 2025-2026":36051,"Honolulu|Women's March Madness - 2026":23375,"Houston|World Cup - 2026":6921,"Houston|MLB Playoffs - 2026":2524,"Houston|College Football - 2026-2027":13286,"Houston|Men's March Madness - 2026":2265,"Houston|Men's College Basketball - 2025-2026":5470,"Houston|NBA Playoffs - 2026":2000,"Houston|MLB Regular Season - 2026":6537,"Houston|NBA Regular Season - 2025-2026":7610,"Houston|College Football Playoffs - 2026-2027":960,"Houston|NHL Playoffs - 2026":826,"Houston|NFL - 2026-2027":10992,"Houston|NHL Regular Season - 2025-2026":688,"Houston|Women's March Madness - 2026":1040,"Huntsville-Decatur (Flor)|Men's March Madness - 2026":6134,"Huntsville-Decatur (Flor)|College Football - 2026-2027":167032,"Huntsville-Decatur (Flor)|College Football Playoffs - 2026-2027":36718,"Huntsville-Decatur (Flor)|NFL - 2026-2027":85134,"Huntsville-Decatur (Flor)|Women's March Madness - 2026":10441,"Huntsville-Decatur (Flor)|Men's College Basketball - 2025-2026":141347,"Huntsville-Decatur (Flor)|NBA Playoffs - 2026":17239,"Huntsville-Decatur (Flor)|NHL Playoffs - 2026":11592,"Huntsville-Decatur (Flor)|NBA Regular Season - 2025-2026":36354,"Huntsville-Decatur (Flor)|MLB Playoffs - 2026":29773,"Huntsville-Decatur (Flor)|World Cup - 2026":4803,"Huntsville-Decatur (Flor)|NHL Regular Season - 2025-2026":16154,"Huntsville-Decatur (Flor)|MLB Regular Season - 2026":156216,"Idaho Fals-Pocatllo(Jcksn)|World Cup - 2026":476,"Idaho Fals-Pocatllo(Jcksn)|MLB Playoffs - 2026":1748,"Idaho Fals-Pocatllo(Jcksn)|College Football - 2026-2027":5384,"Idaho Fals-Pocatllo(Jcksn)|Men's March Madness - 2026":1632,"Idaho Fals-Pocatllo(Jcksn)|Men's College Basketball - 2025-2026":2703,"Idaho Fals-Pocatllo(Jcksn)|NBA Playoffs - 2026":605,"Idaho Fals-Pocatllo(Jcksn)|MLB Regular Season - 2026":1560,"Idaho Fals-Pocatllo(Jcksn)|NBA Regular Season - 2025-2026":1932,"Idaho Fals-Pocatllo(Jcksn)|College Football Playoffs - 2026-2027":503,"Idaho Fals-Pocatllo(Jcksn)|NHL Playoffs - 2026":2727,"Idaho Fals-Pocatllo(Jcksn)|NFL - 2026-2027":5942,"Idaho Fals-Pocatllo(Jcksn)|NHL Regular Season - 2025-2026":2386,"Idaho Fals-Pocatllo(Jcksn)|Women's March Madness - 2026":338,"Indianapolis|Men's March Madness - 2026":72599,"Indianapolis|College Football - 2026-2027":176751,"Indianapolis|World Cup - 2026":21726,"Indianapolis|MLB Playoffs - 2026":48552,"Indianapolis|Men's College Basketball - 2025-2026":183978,"Indianapolis|NBA Playoffs - 2026":65889,"Indianapolis|MLB Regular Season - 2026":84030,"Indianapolis|NBA Regular Season - 2025-2026":181750,"Indianapolis|College Football Playoffs - 2026-2027":15448,"Indianapolis|NHL Playoffs - 2026":19006,"Indianapolis|NFL - 2026-2027":211778,"Indianapolis|NHL Regular Season - 2025-2026":19870,"Indianapolis|Women's March Madness - 2026":17986,"Jackson, MS|College Football - 2026-2027":39,"Jackson, MS|Men's College Basketball - 2025-2026":1,"Jackson, MS|MLB Playoffs - 2026":0,"Jackson, MS|Men's March Madness - 2026":9,"Jackson, MS|MLB Regular Season - 2026":28,"Jackson, MS|NBA Playoffs - 2026":4,"Jackson, MS|College Football Playoffs - 2026-2027":5,"Jackson, MS|NBA Regular Season - 2025-2026":41,"Jackson, MS|NFL - 2026-2027":31,"Jackson, MS|NHL Regular Season - 2025-2026":1,"Jackson, MS|World Cup - 2026":106,"Jackson, TN|World Cup - 2026":1152,"Jackson, TN|MLB Playoffs - 2026":13646,"Jackson, TN|College Football - 2026-2027":109126,"Jackson, TN|Men's March Madness - 2026":22283,"Jackson, TN|Men's College Basketball - 2025-2026":63395,"Jackson, TN|NBA Playoffs - 2026":11285,"Jackson, TN|MLB Regular Season - 2026":31036,"Jackson, TN|NBA Regular Season - 2025-2026":30932,"Jackson, TN|College Football Playoffs - 2026-2027":8846,"Jackson, TN|NHL Playoffs - 2026":4109,"Jackson, TN|NFL - 2026-2027":59032,"Jackson, TN|NHL Regular Season - 2025-2026":5891,"Jackson, TN|Women's March Madness - 2026":10589,"Jacksonville|MLB Playoffs - 2026":37,"Jacksonville|College Football - 2026-2027":111,"Jacksonville|NBA Playoffs - 2026":12,"Jacksonville|NBA Regular Season - 2025-2026":481,"Jacksonville|College Football Playoffs - 2026-2027":11,"Jacksonville|NHL Playoffs - 2026":1,"Jacksonville|NFL - 2026-2027":152,"Jacksonville|World Cup - 2026":2165,"Jacksonville|MLB Regular Season - 2026":5,"Johnstown-Altoona-St Colge|NBA Regular Season - 2025-2026":60,"Johnstown-Altoona-St Colge|MLB Playoffs - 2026":2,"Johnstown-Altoona-St Colge|College Football Playoffs - 2026-2027":2,"Johnstown-Altoona-St Colge|World Cup - 2026":136,"Johnstown-Altoona-St Colge|NFL - 2026-2027":28,"Johnstown-Altoona-St Colge|MLB Regular Season - 2026":0,"Johnstown-Altoona-St Colge|College Football - 2026-2027":1,"Jonesboro|NBA Regular Season - 2025-2026":1,"Jonesboro|College Football - 2026-2027":3,"Jonesboro|World Cup - 2026":15,"Joplin-Pittsburg|NFL - 2026-2027":2,"Joplin-Pittsburg|College Football - 2026-2027":2,"Joplin-Pittsburg|MLB Regular Season - 2026":50,"Joplin-Pittsburg|NBA Regular Season - 2025-2026":7,"Joplin-Pittsburg|MLB Playoffs - 2026":1,"Joplin-Pittsburg|NHL Playoffs - 2026":1,"Joplin-Pittsburg|NBA Playoffs - 2026":6,"Joplin-Pittsburg|World Cup - 2026":36,"Juneau|NBA Regular Season - 2025-2026":12,"Kansas City|Men's March Madness - 2026":63843,"Kansas City|College Football Playoffs - 2026-2027":118817,"Kansas City|Men's College Basketball - 2025-2026":358351,"Kansas City|NFL - 2026-2027":664947,"Kansas City|College Football - 2026-2027":511235,"Kansas City|MLB Regular Season - 2026":949706,"Kansas City|NHL Playoffs - 2026":46964,"Kansas City|MLB Playoffs - 2026":107740,"Kansas City|NBA Regular Season - 2025-2026":212435,"Kansas City|NBA Playoffs - 2026":62842,"Kansas City|World Cup - 2026":41874,"Kansas City|NHL Regular Season - 2025-2026":51735,"Kansas City|Women's March Madness - 2026":38701,"Knoxville|World Cup - 2026":9503,"Knoxville|MLB Playoffs - 2026":39320,"Knoxville|College Football - 2026-2027":328883,"Knoxville|Men's March Madness - 2026":90692,"Knoxville|Men's College Basketball - 2025-2026":250933,"Knoxville|NBA Playoffs - 2026":12054,"Knoxville|MLB Regular Season - 2026":119183,"Knoxville|NBA Regular Season - 2025-2026":32654,"Knoxville|College Football Playoffs - 2026-2027":23138,"Knoxville|NHL Playoffs - 2026":18195,"Knoxville|NFL - 2026-2027":127043,"Knoxville|NHL Regular Season - 2025-2026":21114,"Knoxville|Women's March Madness - 2026":26489,"La Crosse-Eau Claire|World Cup - 2026":5930,"La Crosse-Eau Claire|MLB Playoffs - 2026":93802,"La Crosse-Eau Claire|College Football - 2026-2027":117283,"La Crosse-Eau Claire|Men's March Madness - 2026":40901,"La Crosse-Eau Claire|Men's College Basketball - 2025-2026":90742,"La Crosse-Eau Claire|NBA Playoffs - 2026":14888,"La Crosse-Eau Claire|MLB Regular Season - 2026":396349,"La Crosse-Eau Claire|NBA Regular Season - 2025-2026":64793,"La Crosse-Eau Claire|College Football Playoffs - 2026-2027":13363,"La Crosse-Eau Claire|NHL Playoffs - 2026":28808,"La Crosse-Eau Claire|NFL - 2026-2027":164789,"La Crosse-Eau Claire|NHL Regular Season - 2025-2026":35212,"La Crosse-Eau Claire|Women's March Madness - 2026":8416,"Lafayette, IN|College Football - 2026-2027":4,"Lafayette, IN|NFL - 2026-2027":18,"Lafayette, IN|College Football Playoffs - 2026-2027":0,"Lafayette, IN|NBA Regular Season - 2025-2026":28,"Lafayette, IN|NBA Playoffs - 2026":1,"Lafayette, IN|World Cup - 2026":142,"Lafayette, LA|World Cup - 2026":402,"Lafayette, LA|MLB Playoffs - 2026":4123,"Lafayette, LA|College Football - 2026-2027":48916,"Lafayette, LA|Men's March Madness - 2026":4611,"Lafayette, LA|Men's College Basketball - 2025-2026":18446,"Lafayette, LA|NBA Playoffs - 2026":7324,"Lafayette, LA|MLB Regular Season - 2026":11697,"Lafayette, LA|NBA Regular Season - 2025-2026":18751,"Lafayette, LA|College Football Playoffs - 2026-2027":3986,"Lafayette, LA|NHL Playoffs - 2026":1836,"Lafayette, LA|NFL - 2026-2027":40105,"Lafayette, LA|NHL Regular Season - 2025-2026":2101,"Lafayette, LA|Women's March Madness - 2026":8220,"Lake Charles|NFL - 2026-2027":5,"Lake Charles|College Football - 2026-2027":3,"Lake Charles|NBA Regular Season - 2025-2026":28,"Lake Charles|World Cup - 2026":80,"Lansing|World Cup - 2026":896,"Lansing|MLB Playoffs - 2026":4023,"Lansing|College Football - 2026-2027":10520,"Lansing|Men's March Madness - 2026":3435,"Lansing|Men's College Basketball - 2025-2026":7573,"Lansing|NBA Playoffs - 2026":666,"Lansing|MLB Regular Season - 2026":21816,"Lansing|NBA Regular Season - 2025-2026":2803,"Lansing|College Football Playoffs - 2026-2027":564,"Lansing|NHL Playoffs - 2026":977,"Lansing|NFL - 2026-2027":8056,"Lansing|NHL Regular Season - 2025-2026":2845,"Lansing|Women's March Madness - 2026":370,"Laredo|Men's March Madness - 2026":-481,"Laredo|World Cup - 2026":496,"Laredo|College Football - 2026-2027":42545,"Laredo|MLB Playoffs - 2026":20731,"Laredo|Men's College Basketball - 2025-2026":11866,"Laredo|NBA Playoffs - 2026":11063,"Laredo|MLB Regular Season - 2026":48846,"Laredo|NBA Regular Season - 2025-2026":34227,"Laredo|College Football Playoffs - 2026-2027":12013,"Laredo|NHL Playoffs - 2026":6058,"Laredo|NFL - 2026-2027":74774,"Laredo|NHL Regular Season - 2025-2026":4078,"Laredo|Women's March Madness - 2026":3447,"Las Vegas|College Football Playoffs - 2026-2027":2,"Las Vegas|MLB Regular Season - 2026":17257,"Las Vegas|NFL - 2026-2027":105,"Las Vegas|NBA Playoffs - 2026":1071,"Las Vegas|College Football - 2026-2027":139,"Las Vegas|NBA Regular Season - 2025-2026":53217,"Las Vegas|MLB Playoffs - 2026":713,"Las Vegas|NHL Playoffs - 2026":2,"Las Vegas|Men's College Basketball - 2025-2026":4,"Las Vegas|World Cup - 2026":2458,"Lexington|Men's March Madness - 2026":93021,"Lexington|Men's College Basketball - 2025-2026":454921,"Lexington|College Football - 2026-2027":416397,"Lexington|NFL - 2026-2027":255601,"Lexington|NHL Playoffs - 2026":23045,"Lexington|NBA Regular Season - 2025-2026":141815,"Lexington|MLB Regular Season - 2026":263143,"Lexington|MLB Playoffs - 2026":79770,"Lexington|College Football Playoffs - 2026-2027":62593,"Lexington|NBA Playoffs - 2026":43553,"Lexington|World Cup - 2026":23712,"Lexington|NHL Regular Season - 2025-2026":27736,"Lexington|Women's March Madness - 2026":37219,"Lima|College Football Playoffs - 2026-2027":2402,"Lima|NFL - 2026-2027":61154,"Lima|College Football - 2026-2027":100596,"Lima|World Cup - 2026":2686,"Lima|NBA Playoffs - 2026":12121,"Lima|NBA Regular Season - 2025-2026":51442,"Lima|MLB Regular Season - 2026":131732,"Lima|NHL Playoffs - 2026":6628,"Lima|Men's March Madness - 2026":23690,"Lima|MLB Playoffs - 2026":24043,"Lima|Men's College Basketball - 2025-2026":53023,"Lima|NHL Regular Season - 2025-2026":12435,"Lima|Women's March Madness - 2026":7241,"Lincoln & Hastings-Krny|Men's March Madness - 2026":-43527,"Lincoln & Hastings-Krny|NFL - 2026-2027":136515,"Lincoln & Hastings-Krny|College Football - 2026-2027":364953,"Lincoln & Hastings-Krny|World Cup - 2026":11123,"Lincoln & Hastings-Krny|NBA Playoffs - 2026":14266,"Lincoln & Hastings-Krny|NBA Regular Season - 2025-2026":32752,"Lincoln & Hastings-Krny|MLB Regular Season - 2026":111536,"Lincoln & Hastings-Krny|NHL Playoffs - 2026":18730,"Lincoln & Hastings-Krny|College Football Playoffs - 2026-2027":52968,"Lincoln & Hastings-Krny|MLB Playoffs - 2026":34401,"Lincoln & Hastings-Krny|Men's College Basketball - 2025-2026":179411,"Lincoln & Hastings-Krny|NHL Regular Season - 2025-2026":18077,"Lincoln & Hastings-Krny|Women's March Madness - 2026":15738,"Little Rock-Pine Bluff|NBA Playoffs - 2026":1,"Little Rock-Pine Bluff|MLB Playoffs - 2026":4,"Little Rock-Pine Bluff|College Football - 2026-2027":1,"Little Rock-Pine Bluff|NBA Regular Season - 2025-2026":67,"Little Rock-Pine Bluff|NFL - 2026-2027":19,"Little Rock-Pine Bluff|World Cup - 2026":232,"Little Rock-Pine Bluff|MLB Regular Season - 2026":15,"Louisville|Men's March Madness - 2026":199966,"Louisville|Men's College Basketball - 2025-2026":968867,"Louisville|NFL - 2026-2027":387901,"Louisville|College Football Playoffs - 2026-2027":62928,"Louisville|MLB Regular Season - 2026":293954,"Louisville|World Cup - 2026":44954,"Louisville|NHL Playoffs - 2026":37956,"Louisville|College Football - 2026-2027":764705,"Louisville|MLB Playoffs - 2026":112193,"Louisville|NBA Regular Season - 2025-2026":328618,"Louisville|NBA Playoffs - 2026":88877,"Louisville|NHL Regular Season - 2025-2026":39863,"Louisville|Women's March Madness - 2026":65040,"Lubbock|College Football - 2026-2027":2,"Lubbock|NFL - 2026-2027":3,"Lubbock|College Football Playoffs - 2026-2027":0,"Lubbock|World Cup - 2026":157,"Lubbock|NBA Regular Season - 2025-2026":133,"Lubbock|MLB Regular Season - 2026":79,"Macon|World Cup - 2026":1705,"Macon|MLB Playoffs - 2026":5964,"Macon|College Football - 2026-2027":65557,"Macon|Men's March Madness - 2026":5854,"Macon|Men's College Basketball - 2025-2026":21036,"Macon|NBA Playoffs - 2026":9188,"Macon|MLB Regular Season - 2026":45331,"Macon|NBA Regular Season - 2025-2026":32295,"Macon|College Football Playoffs - 2026-2027":5029,"Macon|NHL Playoffs - 2026":2215,"Macon|NFL - 2026-2027":43909,"Macon|NHL Regular Season - 2025-2026":3161,"Macon|Women's March Madness - 2026":5692,"Madison|Men's March Madness - 2026":57878,"Madison|College Football Playoffs - 2026-2027":17874,"Madison|College Football - 2026-2027":337347,"Madison|NFL - 2026-2027":324090,"Madison|MLB Regular Season - 2026":829836,"Madison|NBA Playoffs - 2026":49835,"Madison|NHL Playoffs - 2026":63590,"Madison|MLB Playoffs - 2026":245532,"Madison|NBA Regular Season - 2025-2026":163640,"Madison|Men's College Basketball - 2025-2026":302980,"Madison|World Cup - 2026":30936,"Madison|NHL Regular Season - 2025-2026":54357,"Madison|Women's March Madness - 2026":18633,"Mankato|World Cup - 2026":1410,"Mankato|MLB Playoffs - 2026":7556,"Mankato|College Football - 2026-2027":26784,"Mankato|Men's March Madness - 2026":6831,"Mankato|Men's College Basketball - 2025-2026":12306,"Mankato|NBA Playoffs - 2026":9685,"Mankato|MLB Regular Season - 2026":53246,"Mankato|NBA Regular Season - 2025-2026":25113,"Mankato|College Football Playoffs - 2026-2027":1682,"Mankato|NHL Playoffs - 2026":11844,"Mankato|NFL - 2026-2027":37102,"Mankato|NHL Regular Season - 2025-2026":23017,"Mankato|Women's March Madness - 2026":2549,"Marquette|Men's March Madness - 2026":15621,"Marquette|NFL - 2026-2027":95195,"Marquette|College Football - 2026-2027":48630,"Marquette|World Cup - 2026":2436,"Marquette|NBA Playoffs - 2026":6022,"Marquette|NBA Regular Season - 2025-2026":17646,"Marquette|MLB Regular Season - 2026":137540,"Marquette|NHL Playoffs - 2026":35449,"Marquette|College Football Playoffs - 2026-2027":5042,"Marquette|MLB Playoffs - 2026":31370,"Marquette|Men's College Basketball - 2025-2026":32220,"Marquette|NHL Regular Season - 2025-2026":59948,"Marquette|Women's March Madness - 2026":4795,"Medford-Klamath Falls|NFL - 2026-2027":99489,"Medford-Klamath Falls|MLB Regular Season - 2026":155494,"Medford-Klamath Falls|Men's College Basketball - 2025-2026":34779,"Medford-Klamath Falls|College Football Playoffs - 2026-2027":19571,"Medford-Klamath Falls|NBA Playoffs - 2026":12507,"Medford-Klamath Falls|World Cup - 2026":4687,"Medford-Klamath Falls|NBA Regular Season - 2025-2026":35038,"Medford-Klamath Falls|College Football - 2026-2027":96575,"Medford-Klamath Falls|NHL Playoffs - 2026":11510,"Medford-Klamath Falls|Men's March Madness - 2026":17991,"Medford-Klamath Falls|MLB Playoffs - 2026":40793,"Medford-Klamath Falls|NHL Regular Season - 2025-2026":11806,"Medford-Klamath Falls|Women's March Madness - 2026":6990,"Memphis|World Cup - 2026":910,"Memphis|MLB Playoffs - 2026":5029,"Memphis|College Football - 2026-2027":35779,"Memphis|Men's March Madness - 2026":7287,"Memphis|Men's College Basketball - 2025-2026":23280,"Memphis|NBA Playoffs - 2026":4656,"Memphis|MLB Regular Season - 2026":10429,"Memphis|NBA Regular Season - 2025-2026":16437,"Memphis|College Football Playoffs - 2026-2027":2625,"Memphis|NHL Playoffs - 2026":1128,"Memphis|NFL - 2026-2027":19809,"Memphis|NHL Regular Season - 2025-2026":1828,"Memphis|Women's March Madness - 2026":3038,"Meridian|World Cup - 2026":45,"Meridian|MLB Playoffs - 2026":23,"Meridian|College Football - 2026-2027":202,"Meridian|Men's March Madness - 2026":63,"Meridian|Men's College Basketball - 2025-2026":229,"Meridian|NBA Playoffs - 2026":75,"Meridian|MLB Regular Season - 2026":104,"Meridian|NBA Regular Season - 2025-2026":296,"Meridian|College Football Playoffs - 2026-2027":10,"Meridian|NHL Playoffs - 2026":2,"Meridian|NFL - 2026-2027":160,"Meridian|NHL Regular Season - 2025-2026":1,"Meridian|Women's March Madness - 2026":10,"Miami-Ft. Lauderdale|College Football Playoffs - 2026-2027":12,"Miami-Ft. Lauderdale|MLB Regular Season - 2026":9,"Miami-Ft. Lauderdale|NFL - 2026-2027":56,"Miami-Ft. Lauderdale|NBA Regular Season - 2025-2026":853,"Miami-Ft. Lauderdale|College Football - 2026-2027":28,"Miami-Ft. Lauderdale|NHL Playoffs - 2026":2,"Miami-Ft. Lauderdale|MLB Playoffs - 2026":6,"Miami-Ft. Lauderdale|Women's March Madness - 2026":0,"Miami-Ft. Lauderdale|NBA Playoffs - 2026":12,"Miami-Ft. Lauderdale|World Cup - 2026":7792,"Milwaukee|Men's March Madness - 2026":196900,"Milwaukee|NFL - 2026-2027":916024,"Milwaukee|MLB Regular Season - 2026":2827866,"Milwaukee|NBA Playoffs - 2026":226804,"Milwaukee|College Football - 2026-2027":680265,"Milwaukee|NBA Regular Season - 2025-2026":974197,"Milwaukee|World Cup - 2026":76816,"Milwaukee|NHL Playoffs - 2026":132735,"Milwaukee|College Football Playoffs - 2026-2027":59728,"Milwaukee|MLB Playoffs - 2026":847091,"Milwaukee|Men's College Basketball - 2025-2026":506785,"Milwaukee|NHL Regular Season - 2025-2026":125503,"Milwaukee|Women's March Madness - 2026":52211,"Minneapolis-St. Paul|World Cup - 2026":23373,"Minneapolis-St. Paul|MLB Playoffs - 2026":75028,"Minneapolis-St. Paul|College Football - 2026-2027":248224,"Minneapolis-St. Paul|Men's March Madness - 2026":68384,"Minneapolis-St. Paul|Men's College Basketball - 2025-2026":120758,"Minneapolis-St. Paul|NBA Playoffs - 2026":91040,"Minneapolis-St. Paul|MLB Regular Season - 2026":459497,"Minneapolis-St. Paul|NBA Regular Season - 2025-2026":248218,"Minneapolis-St. Paul|College Football Playoffs - 2026-2027":12177,"Minneapolis-St. Paul|NHL Playoffs - 2026":149936,"Minneapolis-St. Paul|NFL - 2026-2027":361063,"Minneapolis-St. Paul|NHL Regular Season - 2025-2026":328720,"Minneapolis-St. Paul|Women's March Madness - 2026":22798,"Missoula|College Football Playoffs - 2026-2027":1307,"Missoula|NBA Regular Season - 2025-2026":3412,"Missoula|NHL Regular Season - 2025-2026":7554,"Missoula|Men's March Madness - 2026":18582,"Missoula|College Football - 2026-2027":55580,"Missoula|NFL - 2026-2027":69705,"Missoula|NBA Playoffs - 2026":7319,"Missoula|MLB Regular Season - 2026":61851,"Missoula|NHL Playoffs - 2026":18946,"Missoula|MLB Playoffs - 2026":26872,"Missoula|Men's College Basketball - 2025-2026":37499,"Missoula|World Cup - 2026":4296,"Missoula|Women's March Madness - 2026":6688,"Mobile-Pensacola (Ft Walt)|World Cup - 2026":798,"Mobile-Pensacola (Ft Walt)|MLB Playoffs - 2026":2360,"Mobile-Pensacola (Ft Walt)|College Football - 2026-2027":22532,"Mobile-Pensacola (Ft Walt)|Men's March Madness - 2026":1743,"Mobile-Pensacola (Ft Walt)|Men's College Basketball - 2025-2026":5618,"Mobile-Pensacola (Ft Walt)|NBA Playoffs - 2026":1246,"Mobile-Pensacola (Ft Walt)|MLB Regular Season - 2026":7834,"Mobile-Pensacola (Ft Walt)|NBA Regular Season - 2025-2026":4397,"Mobile-Pensacola (Ft Walt)|College Football Playoffs - 2026-2027":1849,"Mobile-Pensacola (Ft Walt)|NHL Playoffs - 2026":1084,"Mobile-Pensacola (Ft Walt)|NFL - 2026-2027":11352,"Mobile-Pensacola (Ft Walt)|NHL Regular Season - 2025-2026":1047,"Mobile-Pensacola (Ft Walt)|Women's March Madness - 2026":960,"Monroe-El Dorado|College Football - 2026-2027":16,"Monroe-El Dorado|NFL - 2026-2027":9,"Monroe-El Dorado|MLB Playoffs - 2026":6,"Monroe-El Dorado|World Cup - 2026":103,"Monroe-El Dorado|NBA Regular Season - 2025-2026":45,"Monroe-El Dorado|MLB Regular Season - 2026":12,"Monterey-Salinas|World Cup - 2026":3861,"Monterey-Salinas|MLB Playoffs - 2026":10822,"Monterey-Salinas|College Football - 2026-2027":14016,"Monterey-Salinas|Men's March Madness - 2026":2707,"Monterey-Salinas|Men's College Basketball - 2025-2026":4742,"Monterey-Salinas|NBA Playoffs - 2026":8652,"Monterey-Salinas|MLB Regular Season - 2026":78810,"Monterey-Salinas|NBA Regular Season - 2025-2026":35016,"Monterey-Salinas|College Football Playoffs - 2026-2027":1062,"Monterey-Salinas|NHL Playoffs - 2026":2401,"Monterey-Salinas|NFL - 2026-2027":44136,"Monterey-Salinas|NHL Regular Season - 2025-2026":2724,"Monterey-Salinas|Women's March Madness - 2026":1257,"Montgomery-Selma|Men's March Madness - 2026":21552,"Montgomery-Selma|World Cup - 2026":2782,"Montgomery-Selma|College Football - 2026-2027":367958,"Montgomery-Selma|College Football Playoffs - 2026-2027":83615,"Montgomery-Selma|NFL - 2026-2027":231767,"Montgomery-Selma|MLB Regular Season - 2026":158529,"Montgomery-Selma|NHL Playoffs - 2026":11529,"Montgomery-Selma|NBA Regular Season - 2025-2026":170738,"Montgomery-Selma|Men's College Basketball - 2025-2026":254946,"Montgomery-Selma|MLB Playoffs - 2026":30444,"Montgomery-Selma|NBA Playoffs - 2026":56441,"Montgomery-Selma|NHL Regular Season - 2025-2026":15225,"Montgomery-Selma|Women's March Madness - 2026":30026,"Myrtle Beach-Florence|Men's March Madness - 2026":21646,"Myrtle Beach-Florence|College Football Playoffs - 2026-2027":71089,"Myrtle Beach-Florence|College Football - 2026-2027":606111,"Myrtle Beach-Florence|Men's College Basketball - 2025-2026":291414,"Myrtle Beach-Florence|NFL - 2026-2027":474360,"Myrtle Beach-Florence|MLB Regular Season - 2026":300423,"Myrtle Beach-Florence|NHL Playoffs - 2026":66272,"Myrtle Beach-Florence|NBA Regular Season - 2025-2026":190446,"Myrtle Beach-Florence|NBA Playoffs - 2026":71946,"Myrtle Beach-Florence|MLB Playoffs - 2026":122006,"Myrtle Beach-Florence|World Cup - 2026":19996,"Myrtle Beach-Florence|NHL Regular Season - 2025-2026":71034,"Myrtle Beach-Florence|Women's March Madness - 2026":80704,"Nashville|World Cup - 2026":14858,"Nashville|MLB Playoffs - 2026":47085,"Nashville|College Football - 2026-2027":315953,"Nashville|Men's March Madness - 2026":74625,"Nashville|Men's College Basketball - 2025-2026":201270,"Nashville|NBA Playoffs - 2026":26632,"Nashville|MLB Regular Season - 2026":133802,"Nashville|NBA Regular Season - 2025-2026":73496,"Nashville|College Football Playoffs - 2026-2027":22252,"Nashville|NHL Playoffs - 2026":23240,"Nashville|NFL - 2026-2027":202885,"Nashville|NHL Regular Season - 2025-2026":27330,"Nashville|Women's March Madness - 2026":26448,"New Orleans|World Cup - 2026":10055,"New Orleans|MLB Playoffs - 2026":29448,"New Orleans|College Football - 2026-2027":347689,"New Orleans|Men's March Madness - 2026":25494,"New Orleans|Men's College Basketball - 2025-2026":95291,"New Orleans|NBA Playoffs - 2026":35848,"New Orleans|MLB Regular Season - 2026":67730,"New Orleans|NBA Regular Season - 2025-2026":91348,"New Orleans|College Football Playoffs - 2026-2027":30326,"New Orleans|NHL Playoffs - 2026":11912,"New Orleans|NFL - 2026-2027":277010,"New Orleans|NHL Regular Season - 2025-2026":14915,"New Orleans|Women's March Madness - 2026":37845,"New York|Men's March Madness - 2026":-402035,"New York|NHL Playoffs - 2026":-20445,"New York|NBA Playoffs - 2026":139188,"New York|NBA Regular Season - 2025-2026":1284474,"New York|NFL - 2026-2027":1158630,"New York|MLB Regular Season - 2026":3517942,"New York|College Football Playoffs - 2026-2027":171854,"New York|College Football - 2026-2027":618077,"New York|Men's College Basketball - 2025-2026":431709,"New York|MLB Playoffs - 2026":611131,"New York|World Cup - 2026":299792,"New York|NHL Regular Season - 2025-2026":504705,"New York|Women's March Madness - 2026":87793,"Norfolk-Portsmth-Newpt Nws|Men's March Madness - 2026":42012,"Norfolk-Portsmth-Newpt Nws|College Football - 2026-2027":195548,"Norfolk-Portsmth-Newpt Nws|World Cup - 2026":12760,"Norfolk-Portsmth-Newpt Nws|MLB Playoffs - 2026":55029,"Norfolk-Portsmth-Newpt Nws|Men's College Basketball - 2025-2026":115084,"Norfolk-Portsmth-Newpt Nws|NBA Playoffs - 2026":35408,"Norfolk-Portsmth-Newpt Nws|MLB Regular Season - 2026":70315,"Norfolk-Portsmth-Newpt Nws|NBA Regular Season - 2025-2026":87039,"Norfolk-Portsmth-Newpt Nws|College Football Playoffs - 2026-2027":10814,"Norfolk-Portsmth-Newpt Nws|NHL Playoffs - 2026":30071,"Norfolk-Portsmth-Newpt Nws|NFL - 2026-2027":235208,"Norfolk-Portsmth-Newpt Nws|NHL Regular Season - 2025-2026":22262,"Norfolk-Portsmth-Newpt Nws|Women's March Madness - 2026":25087,"North Platte|World Cup - 2026":386,"North Platte|MLB Playoffs - 2026":1722,"North Platte|College Football - 2026-2027":20246,"North Platte|Men's March Madness - 2026":1994,"North Platte|Men's College Basketball - 2025-2026":7191,"North Platte|NBA Playoffs - 2026":875,"North Platte|MLB Regular Season - 2026":6997,"North Platte|NBA Regular Season - 2025-2026":2335,"North Platte|College Football Playoffs - 2026-2027":1118,"North Platte|NHL Playoffs - 2026":999,"North Platte|NFL - 2026-2027":7582,"North Platte|NHL Regular Season - 2025-2026":1616,"North Platte|Women's March Madness - 2026":782,"Odessa-Midland|College Football - 2026-2027":2,"Odessa-Midland|NFL - 2026-2027":3,"Odessa-Midland|MLB Playoffs - 2026":6,"Odessa-Midland|World Cup - 2026":220,"Odessa-Midland|NBA Regular Season - 2025-2026":74,"Odessa-Midland|MLB Regular Season - 2026":4,"Oklahoma City|NBA Playoffs - 2026":6,"Oklahoma City|College Football Playoffs - 2026-2027":8,"Oklahoma City|College Football - 2026-2027":21,"Oklahoma City|NBA Regular Season - 2025-2026":346,"Oklahoma City|NFL - 2026-2027":8,"Oklahoma City|World Cup - 2026":433,"Oklahoma City|MLB Regular Season - 2026":2,"Omaha|World Cup - 2026":1863,"Omaha|MLB Playoffs - 2026":5584,"Omaha|College Football - 2026-2027":54087,"Omaha|Men's March Madness - 2026":6072,"Omaha|Men's College Basketball - 2025-2026":27326,"Omaha|NBA Playoffs - 2026":1366,"Omaha|MLB Regular Season - 2026":21566,"Omaha|NBA Regular Season - 2025-2026":2957,"Omaha|College Football Playoffs - 2026-2027":2127,"Omaha|NHL Playoffs - 2026":2398,"Omaha|NFL - 2026-2027":17513,"Omaha|NHL Regular Season - 2025-2026":2071,"Omaha|Women's March Madness - 2026":1928,"Orlando-Daytona Bch-Melbrn|College Football Playoffs - 2026-2027":315998,"Orlando-Daytona Bch-Melbrn|NBA Playoffs - 2026":216529,"Orlando-Daytona Bch-Melbrn|Men's March Madness - 2026":-1033755,"Orlando-Daytona Bch-Melbrn|MLB Playoffs - 2026":472093,"Orlando-Daytona Bch-Melbrn|College Football - 2026-2027":1641574,"Orlando-Daytona Bch-Melbrn|NFL - 2026-2027":1407933,"Orlando-Daytona Bch-Melbrn|World Cup - 2026":265491,"Orlando-Daytona Bch-Melbrn|MLB Regular Season - 2026":1236474,"Orlando-Daytona Bch-Melbrn|Men's College Basketball - 2025-2026":693598,"Orlando-Daytona Bch-Melbrn|NBA Regular Season - 2025-2026":876444,"Orlando-Daytona Bch-Melbrn|NHL Playoffs - 2026":299901,"Orlando-Daytona Bch-Melbrn|NHL Regular Season - 2025-2026":247153,"Orlando-Daytona Bch-Melbrn|Women's March Madness - 2026":112808,"Ottumwa-Kirksville|World Cup - 2026":38,"Ottumwa-Kirksville|NFL - 2026-2027":9,"Ottumwa-Kirksville|College Football - 2026-2027":12,"Paducah-Cape Girard-Harsbg|NFL - 2026-2027":96274,"Paducah-Cape Girard-Harsbg|College Football - 2026-2027":104432,"Paducah-Cape Girard-Harsbg|Men's March Madness - 2026":32534,"Paducah-Cape Girard-Harsbg|College Football Playoffs - 2026-2027":40544,"Paducah-Cape Girard-Harsbg|World Cup - 2026":3499,"Paducah-Cape Girard-Harsbg|NHL Playoffs - 2026":17212,"Paducah-Cape Girard-Harsbg|MLB Regular Season - 2026":199780,"Paducah-Cape Girard-Harsbg|NBA Playoffs - 2026":14435,"Paducah-Cape Girard-Harsbg|NBA Regular Season - 2025-2026":36050,"Paducah-Cape Girard-Harsbg|Men's College Basketball - 2025-2026":106336,"Paducah-Cape Girard-Harsbg|MLB Playoffs - 2026":34155,"Paducah-Cape Girard-Harsbg|NHL Regular Season - 2025-2026":26409,"Paducah-Cape Girard-Harsbg|Women's March Madness - 2026":11427,"Palm Springs|Men's March Madness - 2026":12753,"Palm Springs|College Football Playoffs - 2026-2027":16059,"Palm Springs|NBA Playoffs - 2026":38654,"Palm Springs|NFL - 2026-2027":185442,"Palm Springs|World Cup - 2026":20029,"Palm Springs|NHL Playoffs - 2026":36188,"Palm Springs|MLB Playoffs - 2026":124201,"Palm Springs|MLB Regular Season - 2026":2333478,"Palm Springs|Men's College Basketball - 2025-2026":70242,"Palm Springs|NBA Regular Season - 2025-2026":547637,"Palm Springs|College Football - 2026-2027":148325,"Palm Springs|NHL Regular Season - 2025-2026":45573,"Palm Springs|Women's March Madness - 2026":15125,"Panama City|World Cup - 2026":382,"Panama City|MLB Playoffs - 2026":1548,"Panama City|College Football - 2026-2027":23575,"Panama City|Men's March Madness - 2026":1809,"Panama City|Men's College Basketball - 2025-2026":5310,"Panama City|NBA Playoffs - 2026":1392,"Panama City|MLB Regular Season - 2026":6857,"Panama City|NBA Regular Season - 2025-2026":5479,"Panama City|College Football Playoffs - 2026-2027":1631,"Panama City|NHL Playoffs - 2026":528,"Panama City|NFL - 2026-2027":9194,"Panama City|NHL Regular Season - 2025-2026":667,"Panama City|Women's March Madness - 2026":661,"Parkersburg|World Cup - 2026":367,"Parkersburg|MLB Playoffs - 2026":2348,"Parkersburg|College Football - 2026-2027":12389,"Parkersburg|Men's March Madness - 2026":1648,"Parkersburg|Men's College Basketball - 2025-2026":4735,"Parkersburg|NBA Playoffs - 2026":776,"Parkersburg|MLB Regular Season - 2026":12377,"Parkersburg|NBA Regular Season - 2025-2026":2500,"Parkersburg|College Football Playoffs - 2026-2027":1106,"Parkersburg|NHL Playoffs - 2026":358,"Parkersburg|NFL - 2026-2027":7192,"Parkersburg|NHL Regular Season - 2025-2026":1013,"Parkersburg|Women's March Madness - 2026":1032,"Peoria-Bloomington|MLB Playoffs - 2026":7,"Peoria-Bloomington|NBA Regular Season - 2025-2026":113,"Peoria-Bloomington|NFL - 2026-2027":7,"Peoria-Bloomington|World Cup - 2026":229,"Peoria-Bloomington|MLB Regular Season - 2026":1,"Philadelphia|College Football - 2026-2027":26,"Philadelphia|Men's College Basketball - 2025-2026":0,"Philadelphia|MLB Playoffs - 2026":18,"Philadelphia|NBA Playoffs - 2026":25,"Philadelphia|MLB Regular Season - 2026":52,"Philadelphia|NBA Regular Season - 2025-2026":1253,"Philadelphia|College Football Playoffs - 2026-2027":3,"Philadelphia|NHL Playoffs - 2026":0,"Philadelphia|NFL - 2026-2027":87,"Philadelphia|NHL Regular Season - 2025-2026":2,"Philadelphia|World Cup - 2026":6887,"Phoenix (Prescott)|MLB Playoffs - 2026":225,"Phoenix (Prescott)|College Football - 2026-2027":68,"Phoenix (Prescott)|NBA Playoffs - 2026":233,"Phoenix (Prescott)|NBA Regular Season - 2025-2026":10990,"Phoenix (Prescott)|College Football Playoffs - 2026-2027":9,"Phoenix (Prescott)|NHL Playoffs - 2026":3,"Phoenix (Prescott)|NFL - 2026-2027":200,"Phoenix (Prescott)|World Cup - 2026":5761,"Phoenix (Prescott)|MLB Regular Season - 2026":1406,"Pittsburgh|World Cup - 2026":1662,"Pittsburgh|MLB Playoffs - 2026":1617,"Pittsburgh|College Football - 2026-2027":4406,"Pittsburgh|Men's March Madness - 2026":1186,"Pittsburgh|Men's College Basketball - 2025-2026":2258,"Pittsburgh|NBA Playoffs - 2026":520,"Pittsburgh|MLB Regular Season - 2026":15822,"Pittsburgh|NBA Regular Season - 2025-2026":1675,"Pittsburgh|College Football Playoffs - 2026-2027":293,"Pittsburgh|NHL Playoffs - 2026":1324,"Pittsburgh|NFL - 2026-2027":7934,"Pittsburgh|NHL Regular Season - 2025-2026":4443,"Pittsburgh|Women's March Madness - 2026":367,"Portland, OR|World Cup - 2026":5447,"Portland, OR|MLB Playoffs - 2026":32111,"Portland, OR|College Football - 2026-2027":58589,"Portland, OR|Men's March Madness - 2026":11766,"Portland, OR|Men's College Basketball - 2025-2026":23309,"Portland, OR|NBA Playoffs - 2026":6676,"Portland, OR|MLB Regular Season - 2026":99687,"Portland, OR|NBA Regular Season - 2025-2026":15089,"Portland, OR|College Football Playoffs - 2026-2027":6963,"Portland, OR|NHL Playoffs - 2026":7658,"Portland, OR|NFL - 2026-2027":68940,"Portland, OR|NHL Regular Season - 2025-2026":6628,"Portland, OR|Women's March Madness - 2026":4784,"Portland-Auburn|Men's March Madness - 2026":46982,"Portland-Auburn|College Football - 2026-2027":182152,"Portland-Auburn|World Cup - 2026":42662,"Portland-Auburn|MLB Playoffs - 2026":147926,"Portland-Auburn|Men's College Basketball - 2025-2026":115555,"Portland-Auburn|NBA Playoffs - 2026":66126,"Portland-Auburn|MLB Regular Season - 2026":543697,"Portland-Auburn|NBA Regular Season - 2025-2026":227853,"Portland-Auburn|College Football Playoffs - 2026-2027":26430,"Portland-Auburn|NHL Playoffs - 2026":162449,"Portland-Auburn|NFL - 2026-2027":368887,"Portland-Auburn|NHL Regular Season - 2025-2026":189604,"Portland-Auburn|Women's March Madness - 2026":33472,"Presque Isle|World Cup - 2026":1473,"Presque Isle|MLB Playoffs - 2026":6231,"Presque Isle|College Football - 2026-2027":6137,"Presque Isle|Men's March Madness - 2026":3856,"Presque Isle|Men's College Basketball - 2025-2026":8445,"Presque Isle|NBA Playoffs - 2026":3095,"Presque Isle|MLB Regular Season - 2026":24660,"Presque Isle|NBA Regular Season - 2025-2026":14409,"Presque Isle|College Football Playoffs - 2026-2027":460,"Presque Isle|NHL Playoffs - 2026":5514,"Presque Isle|NFL - 2026-2027":14224,"Presque Isle|NHL Regular Season - 2025-2026":7884,"Presque Isle|Women's March Madness - 2026":2228,"Providence-New Bedford|World Cup - 2026":2451,"Providence-New Bedford|MLB Playoffs - 2026":3086,"Providence-New Bedford|College Football - 2026-2027":2807,"Providence-New Bedford|Men's March Madness - 2026":1215,"Providence-New Bedford|Men's College Basketball - 2025-2026":1860,"Providence-New Bedford|NBA Playoffs - 2026":1666,"Providence-New Bedford|MLB Regular Season - 2026":12034,"Providence-New Bedford|NBA Regular Season - 2025-2026":6951,"Providence-New Bedford|College Football Playoffs - 2026-2027":282,"Providence-New Bedford|NHL Playoffs - 2026":3129,"Providence-New Bedford|NFL - 2026-2027":10294,"Providence-New Bedford|NHL Regular Season - 2025-2026":5113,"Providence-New Bedford|Women's March Madness - 2026":377,"Quincy-Hannibal-Keokuk|World Cup - 2026":221,"Quincy-Hannibal-Keokuk|MLB Playoffs - 2026":2519,"Quincy-Hannibal-Keokuk|College Football - 2026-2027":10399,"Quincy-Hannibal-Keokuk|Men's March Madness - 2026":3422,"Quincy-Hannibal-Keokuk|Men's College Basketball - 2025-2026":7354,"Quincy-Hannibal-Keokuk|NBA Playoffs - 2026":838,"Quincy-Hannibal-Keokuk|MLB Regular Season - 2026":24287,"Quincy-Hannibal-Keokuk|NBA Regular Season - 2025-2026":1757,"Quincy-Hannibal-Keokuk|College Football Playoffs - 2026-2027":2023,"Quincy-Hannibal-Keokuk|NHL Playoffs - 2026":1866,"Quincy-Hannibal-Keokuk|NFL - 2026-2027":11693,"Quincy-Hannibal-Keokuk|NHL Regular Season - 2025-2026":3319,"Quincy-Hannibal-Keokuk|Women's March Madness - 2026":853,"Raleigh-Durham (Fayetvlle)|Men's March Madness - 2026":147605,"Raleigh-Durham (Fayetvlle)|Men's College Basketball - 2025-2026":796484,"Raleigh-Durham (Fayetvlle)|College Football - 2026-2027":1002987,"Raleigh-Durham (Fayetvlle)|NFL - 2026-2027":1054610,"Raleigh-Durham (Fayetvlle)|NHL Regular Season - 2025-2026":333176,"Raleigh-Durham (Fayetvlle)|NBA Playoffs - 2026":245155,"Raleigh-Durham (Fayetvlle)|NHL Playoffs - 2026":408381,"Raleigh-Durham (Fayetvlle)|College Football Playoffs - 2026-2027":106621,"Raleigh-Durham (Fayetvlle)|NBA Regular Season - 2025-2026":615107,"Raleigh-Durham (Fayetvlle)|MLB Playoffs - 2026":238126,"Raleigh-Durham (Fayetvlle)|World Cup - 2026":134265,"Raleigh-Durham (Fayetvlle)|MLB Regular Season - 2026":375994,"Raleigh-Durham (Fayetvlle)|Women's March Madness - 2026":186759,"Rapid City|Men's March Madness - 2026":1419,"Rapid City|College Football - 2026-2027":7511,"Rapid City|World Cup - 2026":332,"Rapid City|MLB Playoffs - 2026":1948,"Rapid City|Men's College Basketball - 2025-2026":3374,"Rapid City|NBA Playoffs - 2026":871,"Rapid City|MLB Regular Season - 2026":3809,"Rapid City|NBA Regular Season - 2025-2026":2436,"Rapid City|College Football Playoffs - 2026-2027":484,"Rapid City|NHL Playoffs - 2026":1851,"Rapid City|NFL - 2026-2027":9536,"Rapid City|NHL Regular Season - 2025-2026":2883,"Rapid City|Women's March Madness - 2026":713,"Reno|College Football Playoffs - 2026-2027":12867,"Reno|Men's March Madness - 2026":35045,"Reno|MLB Playoffs - 2026":70178,"Reno|World Cup - 2026":15704,"Reno|NFL - 2026-2027":222907,"Reno|College Football - 2026-2027":155891,"Reno|NHL Playoffs - 2026":44293,"Reno|MLB Regular Season - 2026":352589,"Reno|Men's College Basketball - 2025-2026":88790,"Reno|NBA Playoffs - 2026":39728,"Reno|NBA Regular Season - 2025-2026":101605,"Reno|NHL Regular Season - 2025-2026":33638,"Reno|Women's March Madness - 2026":11005,"Richmond-Petersburg|World Cup - 2026":703,"Richmond-Petersburg|MLB Playoffs - 2026":836,"Richmond-Petersburg|College Football - 2026-2027":3859,"Richmond-Petersburg|Men's March Madness - 2026":841,"Richmond-Petersburg|Men's College Basketball - 2025-2026":2105,"Richmond-Petersburg|NBA Playoffs - 2026":892,"Richmond-Petersburg|MLB Regular Season - 2026":1886,"Richmond-Petersburg|NBA Regular Season - 2025-2026":2002,"Richmond-Petersburg|College Football Playoffs - 2026-2027":194,"Richmond-Petersburg|NHL Playoffs - 2026":177,"Richmond-Petersburg|NFL - 2026-2027":5723,"Richmond-Petersburg|NHL Regular Season - 2025-2026":242,"Richmond-Petersburg|Women's March Madness - 2026":428,"Roanoke-Lynchburg|World Cup - 2026":789,"Roanoke-Lynchburg|MLB Playoffs - 2026":234,"Roanoke-Lynchburg|College Football - 2026-2027":832,"Roanoke-Lynchburg|Men's March Madness - 2026":167,"Roanoke-Lynchburg|Men's College Basketball - 2025-2026":636,"Roanoke-Lynchburg|NBA Playoffs - 2026":18,"Roanoke-Lynchburg|MLB Regular Season - 2026":536,"Roanoke-Lynchburg|NBA Regular Season - 2025-2026":90,"Roanoke-Lynchburg|College Football Playoffs - 2026-2027":90,"Roanoke-Lynchburg|NHL Playoffs - 2026":82,"Roanoke-Lynchburg|NFL - 2026-2027":705,"Roanoke-Lynchburg|NHL Regular Season - 2025-2026":138,"Roanoke-Lynchburg|Women's March Madness - 2026":15,"Rochester, NY|Men's March Madness - 2026":83504,"Rochester, NY|NHL Regular Season - 2025-2026":252811,"Rochester, NY|NFL - 2026-2027":727099,"Rochester, NY|NBA Regular Season - 2025-2026":227119,"Rochester, NY|MLB Regular Season - 2026":909541,"Rochester, NY|World Cup - 2026":64723,"Rochester, NY|NHL Playoffs - 2026":188177,"Rochester, NY|College Football - 2026-2027":299685,"Rochester, NY|College Football Playoffs - 2026-2027":40637,"Rochester, NY|MLB Playoffs - 2026":175482,"Rochester, NY|NBA Playoffs - 2026":79999,"Rochester, NY|Men's College Basketball - 2025-2026":217097,"Rochester, NY|Women's March Madness - 2026":36770,"Rochestr-Mason City-Austin|World Cup - 2026":7379,"Rochestr-Mason City-Austin|MLB Playoffs - 2026":19115,"Rochestr-Mason City-Austin|College Football - 2026-2027":74151,"Rochestr-Mason City-Austin|Men's March Madness - 2026":18812,"Rochestr-Mason City-Austin|Men's College Basketball - 2025-2026":38211,"Rochestr-Mason City-Austin|NBA Playoffs - 2026":23034,"Rochestr-Mason City-Austin|MLB Regular Season - 2026":113318,"Rochestr-Mason City-Austin|NBA Regular Season - 2025-2026":51471,"Rochestr-Mason City-Austin|College Football Playoffs - 2026-2027":13894,"Rochestr-Mason City-Austin|NHL Playoffs - 2026":35237,"Rochestr-Mason City-Austin|NFL - 2026-2027":113686,"Rochestr-Mason City-Austin|NHL Regular Season - 2025-2026":69524,"Rochestr-Mason City-Austin|Women's March Madness - 2026":7273,"Rockford|World Cup - 2026":1492,"Rockford|MLB Playoffs - 2026":8892,"Rockford|College Football - 2026-2027":10530,"Rockford|Men's March Madness - 2026":4291,"Rockford|Men's College Basketball - 2025-2026":6862,"Rockford|NBA Playoffs - 2026":1687,"Rockford|MLB Regular Season - 2026":7144,"Rockford|NBA Regular Season - 2025-2026":3352,"Rockford|College Football Playoffs - 2026-2027":597,"Rockford|NHL Playoffs - 2026":2526,"Rockford|NFL - 2026-2027":20263,"Rockford|NHL Regular Season - 2025-2026":2531,"Rockford|Women's March Madness - 2026":1055,"Sacramnto-Stkton-Modesto|World Cup - 2026":8167,"Sacramnto-Stkton-Modesto|MLB Playoffs - 2026":13510,"Sacramnto-Stkton-Modesto|College Football - 2026-2027":19852,"Sacramnto-Stkton-Modesto|Men's March Madness - 2026":4151,"Sacramnto-Stkton-Modesto|Men's College Basketball - 2025-2026":9510,"Sacramnto-Stkton-Modesto|NBA Playoffs - 2026":8423,"Sacramnto-Stkton-Modesto|MLB Regular Season - 2026":77431,"Sacramnto-Stkton-Modesto|NBA Regular Season - 2025-2026":34363,"Sacramnto-Stkton-Modesto|College Football Playoffs - 2026-2027":1487,"Sacramnto-Stkton-Modesto|NHL Playoffs - 2026":3540,"Sacramnto-Stkton-Modesto|NFL - 2026-2027":50517,"Sacramnto-Stkton-Modesto|NHL Regular Season - 2025-2026":3483,"Sacramnto-Stkton-Modesto|Women's March Madness - 2026":1506,"Salisbury|World Cup - 2026":247,"Salisbury|MLB Playoffs - 2026":566,"Salisbury|College Football - 2026-2027":1962,"Salisbury|Men's March Madness - 2026":572,"Salisbury|Men's College Basketball - 2025-2026":1380,"Salisbury|NBA Playoffs - 2026":331,"Salisbury|MLB Regular Season - 2026":844,"Salisbury|NBA Regular Season - 2025-2026":935,"Salisbury|College Football Playoffs - 2026-2027":106,"Salisbury|NHL Playoffs - 2026":483,"Salisbury|NFL - 2026-2027":5245,"Salisbury|NHL Regular Season - 2025-2026":507,"Salisbury|Women's March Madness - 2026":328,"Salt Lake City|MLB Playoffs - 2026":93,"Salt Lake City|College Football - 2026-2027":41,"Salt Lake City|Men's College Basketball - 2025-2026":4,"Salt Lake City|NBA Playoffs - 2026":152,"Salt Lake City|College Football Playoffs - 2026-2027":3,"Salt Lake City|NBA Regular Season - 2025-2026":2497,"Salt Lake City|NFL - 2026-2027":78,"Salt Lake City|World Cup - 2026":1841,"Salt Lake City|MLB Regular Season - 2026":209,"San Angelo|World Cup - 2026":28,"San Angelo|NBA Regular Season - 2025-2026":30,"San Antonio|Men's March Madness - 2026":43641,"San Antonio|World Cup - 2026":51256,"San Antonio|College Football - 2026-2027":1000120,"San Antonio|MLB Regular Season - 2026":480826,"San Antonio|NBA Playoffs - 2026":177338,"San Antonio|Men's College Basketball - 2025-2026":262717,"San Antonio|MLB Playoffs - 2026":188437,"San Antonio|NBA Regular Season - 2025-2026":812729,"San Antonio|College Football Playoffs - 2026-2027":320559,"San Antonio|NHL Playoffs - 2026":70246,"San Antonio|NFL - 2026-2027":1040893,"San Antonio|NHL Regular Season - 2025-2026":54877,"San Antonio|Women's March Madness - 2026":67166,"San Diego|World Cup - 2026":53997,"San Diego|MLB Playoffs - 2026":158796,"San Diego|College Football - 2026-2027":180904,"San Diego|Men's March Madness - 2026":67601,"San Diego|Men's College Basketball - 2025-2026":119227,"San Diego|NBA Playoffs - 2026":57513,"San Diego|MLB Regular Season - 2026":910432,"San Diego|NBA Regular Season - 2025-2026":641203,"San Diego|College Football Playoffs - 2026-2027":15296,"San Diego|NHL Playoffs - 2026":46097,"San Diego|NFL - 2026-2027":284416,"San Diego|NHL Regular Season - 2025-2026":46150,"San Diego|Women's March Madness - 2026":13863,"San Francisco-Oak-San Jose|World Cup - 2026":9209,"San Francisco-Oak-San Jose|MLB Playoffs - 2026":5160,"San Francisco-Oak-San Jose|College Football - 2026-2027":9813,"San Francisco-Oak-San Jose|Men's March Madness - 2026":1885,"San Francisco-Oak-San Jose|Men's College Basketball - 2025-2026":3912,"San Francisco-Oak-San Jose|NBA Playoffs - 2026":6418,"San Francisco-Oak-San Jose|MLB Regular Season - 2026":34773,"San Francisco-Oak-San Jose|NBA Regular Season - 2025-2026":38714,"San Francisco-Oak-San Jose|College Football Playoffs - 2026-2027":641,"San Francisco-Oak-San Jose|NHL Playoffs - 2026":2238,"San Francisco-Oak-San Jose|NFL - 2026-2027":28867,"San Francisco-Oak-San Jose|NHL Regular Season - 2025-2026":1793,"San Francisco-Oak-San Jose|Women's March Madness - 2026":638,"Santabarbra-Sanmar-Sanluob|World Cup - 2026":12335,"Santabarbra-Sanmar-Sanluob|MLB Playoffs - 2026":76318,"Santabarbra-Sanmar-Sanluob|College Football - 2026-2027":60447,"Santabarbra-Sanmar-Sanluob|Men's March Madness - 2026":18490,"Santabarbra-Sanmar-Sanluob|Men's College Basketball - 2025-2026":26482,"Santabarbra-Sanmar-Sanluob|NBA Playoffs - 2026":22088,"Santabarbra-Sanmar-Sanluob|MLB Regular Season - 2026":1426184,"Santabarbra-Sanmar-Sanluob|NBA Regular Season - 2025-2026":219727,"Santabarbra-Sanmar-Sanluob|College Football Playoffs - 2026-2027":12489,"Santabarbra-Sanmar-Sanluob|NHL Playoffs - 2026":13548,"Santabarbra-Sanmar-Sanluob|NFL - 2026-2027":151807,"Santabarbra-Sanmar-Sanluob|NHL Regular Season - 2025-2026":14209,"Santabarbra-Sanmar-Sanluob|Women's March Madness - 2026":5431,"Savannah|World Cup - 2026":7760,"Savannah|MLB Playoffs - 2026":27625,"Savannah|College Football - 2026-2027":95171,"Savannah|Men's March Madness - 2026":22808,"Savannah|Men's College Basketball - 2025-2026":44136,"Savannah|NBA Playoffs - 2026":7228,"Savannah|MLB Regular Season - 2026":51485,"Savannah|NBA Regular Season - 2025-2026":14252,"Savannah|College Football Playoffs - 2026-2027":6895,"Savannah|NHL Playoffs - 2026":17280,"Savannah|NFL - 2026-2027":72392,"Savannah|NHL Regular Season - 2025-2026":13700,"Savannah|Women's March Madness - 2026":8863,"Seattle-Tacoma|World Cup - 2026":4832,"Seattle-Tacoma|MLB Playoffs - 2026":24862,"Seattle-Tacoma|College Football - 2026-2027":20114,"Seattle-Tacoma|Men's March Madness - 2026":4868,"Seattle-Tacoma|Men's College Basketball - 2025-2026":10893,"Seattle-Tacoma|NBA Playoffs - 2026":1839,"Seattle-Tacoma|MLB Regular Season - 2026":91801,"Seattle-Tacoma|NBA Regular Season - 2025-2026":8615,"Seattle-Tacoma|College Football Playoffs - 2026-2027":1534,"Seattle-Tacoma|NHL Playoffs - 2026":3981,"Seattle-Tacoma|NFL - 2026-2027":31699,"Seattle-Tacoma|NHL Regular Season - 2025-2026":3311,"Seattle-Tacoma|Women's March Madness - 2026":2726,"Sherman-Ada|NFL - 2026-2027":11,"Sherman-Ada|College Football - 2026-2027":3,"Sherman-Ada|NBA Regular Season - 2025-2026":46,"Sherman-Ada|World Cup - 2026":61,"Shreveport|World Cup - 2026":112,"Shreveport|MLB Playoffs - 2026":5959,"Shreveport|College Football - 2026-2027":36055,"Shreveport|Men's March Madness - 2026":1767,"Shreveport|Men's College Basketball - 2025-2026":4642,"Shreveport|NBA Playoffs - 2026":1646,"Shreveport|MLB Regular Season - 2026":36631,"Shreveport|NBA Regular Season - 2025-2026":2253,"Shreveport|College Football Playoffs - 2026-2027":2703,"Shreveport|NHL Playoffs - 2026":1482,"Shreveport|NFL - 2026-2027":26712,"Shreveport|NHL Regular Season - 2025-2026":904,"Shreveport|Women's March Madness - 2026":1026,"Sioux City|College Football - 2026-2027":27,"Sioux City|NFL - 2026-2027":15,"Sioux City|MLB Playoffs - 2026":2,"Sioux City|World Cup - 2026":80,"Sioux City|NBA Regular Season - 2025-2026":22,"Sioux City|MLB Regular Season - 2026":1,"Sioux Falls(Mitchell)|College Football - 2026-2027":15,"Sioux Falls(Mitchell)|NFL - 2026-2027":12,"Sioux Falls(Mitchell)|MLB Playoffs - 2026":9,"Sioux Falls(Mitchell)|World Cup - 2026":223,"Sioux Falls(Mitchell)|NBA Regular Season - 2025-2026":67,"Sioux Falls(Mitchell)|MLB Regular Season - 2026":6,"South Bend-Elkhart|College Football Playoffs - 2026-2027":0,"South Bend-Elkhart|NBA Regular Season - 2025-2026":49,"South Bend-Elkhart|NFL - 2026-2027":2,"South Bend-Elkhart|World Cup - 2026":334,"South Bend-Elkhart|College Football - 2026-2027":11,"Spokane|World Cup - 2026":3789,"Spokane|MLB Playoffs - 2026":39163,"Spokane|College Football - 2026-2027":48503,"Spokane|Men's March Madness - 2026":20547,"Spokane|Men's College Basketball - 2025-2026":48809,"Spokane|NBA Playoffs - 2026":4668,"Spokane|MLB Regular Season - 2026":102619,"Spokane|NBA Regular Season - 2025-2026":10150,"Spokane|College Football Playoffs - 2026-2027":3275,"Spokane|NHL Playoffs - 2026":9603,"Spokane|NFL - 2026-2027":67466,"Spokane|NHL Regular Season - 2025-2026":7686,"Spokane|Women's March Madness - 2026":4342,"Springfield, MO|World Cup - 2026":1650,"Springfield, MO|MLB Playoffs - 2026":9927,"Springfield, MO|College Football - 2026-2027":49250,"Springfield, MO|Men's March Madness - 2026":11057,"Springfield, MO|Men's College Basketball - 2025-2026":28380,"Springfield, MO|NBA Playoffs - 2026":2433,"Springfield, MO|MLB Regular Season - 2026":78947,"Springfield, MO|NBA Regular Season - 2025-2026":4736,"Springfield, MO|College Football Playoffs - 2026-2027":2606,"Springfield, MO|NHL Playoffs - 2026":11092,"Springfield, MO|NFL - 2026-2027":41927,"Springfield, MO|NHL Regular Season - 2025-2026":12485,"Springfield, MO|Women's March Madness - 2026":2404,"Springfield-Holyoke|World Cup - 2026":12324,"Springfield-Holyoke|MLB Playoffs - 2026":30864,"Springfield-Holyoke|College Football - 2026-2027":31563,"Springfield-Holyoke|Men's March Madness - 2026":12889,"Springfield-Holyoke|Men's College Basketball - 2025-2026":22103,"Springfield-Holyoke|NBA Playoffs - 2026":12496,"Springfield-Holyoke|MLB Regular Season - 2026":113047,"Springfield-Holyoke|NBA Regular Season - 2025-2026":45912,"Springfield-Holyoke|College Football Playoffs - 2026-2027":2538,"Springfield-Holyoke|NHL Playoffs - 2026":31466,"Springfield-Holyoke|NFL - 2026-2027":79573,"Springfield-Holyoke|NHL Regular Season - 2025-2026":43488,"Springfield-Holyoke|Women's March Madness - 2026":6594,"St. Joseph|MLB Regular Season - 2026":598,"St. Joseph|NFL - 2026-2027":134,"St. Joseph|College Football Playoffs - 2026-2027":3,"St. Joseph|Men's March Madness - 2026":8,"St. Joseph|World Cup - 2026":24,"St. Joseph|NBA Playoffs - 2026":1,"St. Joseph|College Football - 2026-2027":88,"St. Joseph|NBA Regular Season - 2025-2026":8,"St. Joseph|MLB Playoffs - 2026":10,"St. Joseph|NHL Playoffs - 2026":4,"St. Joseph|Men's College Basketball - 2025-2026":23,"St. Joseph|NHL Regular Season - 2025-2026":3,"St. Louis|Men's March Madness - 2026":148259,"St. Louis|College Football - 2026-2027":1145809,"St. Louis|World Cup - 2026":152903,"St. Louis|MLB Playoffs - 2026":370332,"St. Louis|Men's College Basketball - 2025-2026":725991,"St. Louis|NBA Playoffs - 2026":161617,"St. Louis|MLB Regular Season - 2026":3048735,"St. Louis|NBA Regular Season - 2025-2026":481865,"St. Louis|College Football Playoffs - 2026-2027":212224,"St. Louis|NHL Playoffs - 2026":645622,"St. Louis|NFL - 2026-2027":1250188,"St. Louis|NHL Regular Season - 2025-2026":1079917,"St. Louis|Women's March Madness - 2026":77547,"Syracuse|Men's March Madness - 2026":60957,"Syracuse|College Football - 2026-2027":372124,"Syracuse|World Cup - 2026":32689,"Syracuse|MLB Playoffs - 2026":152356,"Syracuse|Men's College Basketball - 2025-2026":352798,"Syracuse|NBA Playoffs - 2026":60386,"Syracuse|MLB Regular Season - 2026":910568,"Syracuse|NBA Regular Season - 2025-2026":169701,"Syracuse|College Football Playoffs - 2026-2027":32992,"Syracuse|NHL Playoffs - 2026":116339,"Syracuse|NFL - 2026-2027":458145,"Syracuse|NHL Regular Season - 2025-2026":155630,"Syracuse|Women's March Madness - 2026":34712,"Tallahassee-Thomasville|World Cup - 2026":535,"Tallahassee-Thomasville|MLB Playoffs - 2026":136,"Tallahassee-Thomasville|College Football - 2026-2027":2812,"Tallahassee-Thomasville|Men's March Madness - 2026":230,"Tallahassee-Thomasville|Men's College Basketball - 2025-2026":679,"Tallahassee-Thomasville|NBA Playoffs - 2026":196,"Tallahassee-Thomasville|MLB Regular Season - 2026":633,"Tallahassee-Thomasville|NBA Regular Season - 2025-2026":698,"Tallahassee-Thomasville|College Football Playoffs - 2026-2027":140,"Tallahassee-Thomasville|NHL Playoffs - 2026":12,"Tallahassee-Thomasville|NFL - 2026-2027":1124,"Tallahassee-Thomasville|NHL Regular Season - 2025-2026":28,"Tallahassee-Thomasville|Women's March Madness - 2026":154,"Tampa-St. Pete (Sarasota)|College Football Playoffs - 2026-2027":219285,"Tampa-St. Pete (Sarasota)|NBA Playoffs - 2026":321928,"Tampa-St. Pete (Sarasota)|NFL - 2026-2027":2429567,"Tampa-St. Pete (Sarasota)|Men's March Madness - 2026":111703,"Tampa-St. Pete (Sarasota)|College Football - 2026-2027":2292991,"Tampa-St. Pete (Sarasota)|MLB Playoffs - 2026":763778,"Tampa-St. Pete (Sarasota)|NHL Regular Season - 2025-2026":560199,"Tampa-St. Pete (Sarasota)|MLB Regular Season - 2026":2831577,"Tampa-St. Pete (Sarasota)|NHL Playoffs - 2026":545605,"Tampa-St. Pete (Sarasota)|World Cup - 2026":121937,"Tampa-St. Pete (Sarasota)|Men's College Basketball - 2025-2026":990097,"Tampa-St. Pete (Sarasota)|NBA Regular Season - 2025-2026":818427,"Tampa-St. Pete (Sarasota)|Women's March Madness - 2026":172446,"Terre Haute|World Cup - 2026":719,"Terre Haute|MLB Playoffs - 2026":5968,"Terre Haute|College Football - 2026-2027":18036,"Terre Haute|Men's March Madness - 2026":8435,"Terre Haute|Men's College Basketball - 2025-2026":19316,"Terre Haute|NBA Playoffs - 2026":4228,"Terre Haute|MLB Regular Season - 2026":17098,"Terre Haute|NBA Regular Season - 2025-2026":11568,"Terre Haute|College Football Playoffs - 2026-2027":1423,"Terre Haute|NHL Playoffs - 2026":1394,"Terre Haute|NFL - 2026-2027":24028,"Terre Haute|NHL Regular Season - 2025-2026":1773,"Terre Haute|Women's March Madness - 2026":1672,"Toledo|Men's March Madness - 2026":24064,"Toledo|College Football - 2026-2027":316645,"Toledo|World Cup - 2026":9274,"Toledo|MLB Playoffs - 2026":85938,"Toledo|Men's College Basketball - 2025-2026":114379,"Toledo|NBA Playoffs - 2026":25184,"Toledo|MLB Regular Season - 2026":378935,"Toledo|NBA Regular Season - 2025-2026":88961,"Toledo|College Football Playoffs - 2026-2027":67405,"Toledo|NHL Playoffs - 2026":33249,"Toledo|NFL - 2026-2027":218933,"Toledo|NHL Regular Season - 2025-2026":43647,"Toledo|Women's March Madness - 2026":21223,"Topeka|NBA Playoffs - 2026":1,"Topeka|MLB Playoffs - 2026":6,"Topeka|College Football - 2026-2027":5,"Topeka|NBA Regular Season - 2025-2026":66,"Topeka|NFL - 2026-2027":0,"Topeka|World Cup - 2026":168,"Topeka|MLB Regular Season - 2026":4,"Traverse City-Cadillac|College Football Playoffs - 2026-2027":-698,"Traverse City-Cadillac|Men's March Madness - 2026":43681,"Traverse City-Cadillac|Men's College Basketball - 2025-2026":141076,"Traverse City-Cadillac|College Football - 2026-2027":262608,"Traverse City-Cadillac|NFL - 2026-2027":285333,"Traverse City-Cadillac|MLB Regular Season - 2026":776268,"Traverse City-Cadillac|NHL Playoffs - 2026":80004,"Traverse City-Cadillac|NBA Regular Season - 2025-2026":87151,"Traverse City-Cadillac|NBA Playoffs - 2026":22218,"Traverse City-Cadillac|MLB Playoffs - 2026":130808,"Traverse City-Cadillac|World Cup - 2026":11604,"Traverse City-Cadillac|NHL Regular Season - 2025-2026":162854,"Traverse City-Cadillac|Women's March Madness - 2026":13144,"Tri-Cities, TN-VA|Men's March Madness - 2026":24030,"Tri-Cities, TN-VA|College Football Playoffs - 2026-2027":30834,"Tri-Cities, TN-VA|NFL - 2026-2027":105620,"Tri-Cities, TN-VA|College Football - 2026-2027":218392,"Tri-Cities, TN-VA|Men's College Basketball - 2025-2026":132225,"Tri-Cities, TN-VA|Women's March Madness - 2026":14876,"Tri-Cities, TN-VA|NBA Playoffs - 2026":10259,"Tri-Cities, TN-VA|MLB Playoffs - 2026":30906,"Tri-Cities, TN-VA|NHL Playoffs - 2026":10228,"Tri-Cities, TN-VA|World Cup - 2026":6813,"Tri-Cities, TN-VA|NHL Regular Season - 2025-2026":12073,"Tri-Cities, TN-VA|MLB Regular Season - 2026":105620,"Tri-Cities, TN-VA|NBA Regular Season - 2025-2026":24599,"Tucson (Sierra Vista)|MLB Playoffs - 2026":41,"Tucson (Sierra Vista)|College Football - 2026-2027":6,"Tucson (Sierra Vista)|Men's College Basketball - 2025-2026":0,"Tucson (Sierra Vista)|NBA Playoffs - 2026":77,"Tucson (Sierra Vista)|College Football Playoffs - 2026-2027":0,"Tucson (Sierra Vista)|NBA Regular Season - 2025-2026":2068,"Tucson (Sierra Vista)|NFL - 2026-2027":20,"Tucson (Sierra Vista)|World Cup - 2026":470,"Tucson (Sierra Vista)|MLB Regular Season - 2026":557,"Tulsa|NBA Playoffs - 2026":7,"Tulsa|MLB Playoffs - 2026":2,"Tulsa|College Football - 2026-2027":11,"Tulsa|NBA Regular Season - 2025-2026":152,"Tulsa|NFL - 2026-2027":13,"Tulsa|World Cup - 2026":368,"Tulsa|MLB Regular Season - 2026":0,"Twin Falls|MLB Regular Season - 2026":7,"Twin Falls|World Cup - 2026":4,"Twin Falls|NBA Playoffs - 2026":1,"Twin Falls|NBA Regular Season - 2025-2026":62,"Tyler-Longview(Lfkn&Ncgd)|World Cup - 2026":306,"Tyler-Longview(Lfkn&Ncgd)|MLB Playoffs - 2026":6200,"Tyler-Longview(Lfkn&Ncgd)|College Football - 2026-2027":34838,"Tyler-Longview(Lfkn&Ncgd)|Men's March Madness - 2026":1857,"Tyler-Longview(Lfkn&Ncgd)|Men's College Basketball - 2025-2026":4177,"Tyler-Longview(Lfkn&Ncgd)|NBA Playoffs - 2026":1755,"Tyler-Longview(Lfkn&Ncgd)|MLB Regular Season - 2026":37512,"Tyler-Longview(Lfkn&Ncgd)|NBA Regular Season - 2025-2026":3444,"Tyler-Longview(Lfkn&Ncgd)|College Football Playoffs - 2026-2027":2825,"Tyler-Longview(Lfkn&Ncgd)|NHL Playoffs - 2026":2415,"Tyler-Longview(Lfkn&Ncgd)|NFL - 2026-2027":27852,"Tyler-Longview(Lfkn&Ncgd)|NHL Regular Season - 2025-2026":1064,"Tyler-Longview(Lfkn&Ncgd)|Women's March Madness - 2026":1220,"Utica|World Cup - 2026":10028,"Utica|MLB Playoffs - 2026":46652,"Utica|College Football - 2026-2027":72780,"Utica|Men's March Madness - 2026":26812,"Utica|Men's College Basketball - 2025-2026":60873,"Utica|NBA Playoffs - 2026":16075,"Utica|MLB Regular Season - 2026":316501,"Utica|NBA Regular Season - 2025-2026":52207,"Utica|College Football Playoffs - 2026-2027":6351,"Utica|NHL Playoffs - 2026":35528,"Utica|NFL - 2026-2027":122468,"Utica|NHL Regular Season - 2025-2026":55503,"Utica|Women's March Madness - 2026":8956,"Victoria|World Cup - 2026":15,"Victoria|NBA Regular Season - 2025-2026":1,"Waco-Temple-Bryan|NBA Regular Season - 2025-2026":92118,"Waco-Temple-Bryan|NBA Playoffs - 2026":39518,"Waco-Temple-Bryan|NFL - 2026-2027":248207,"Waco-Temple-Bryan|College Football Playoffs - 2026-2027":58738,"Waco-Temple-Bryan|College Football - 2026-2027":320014,"Waco-Temple-Bryan|MLB Regular Season - 2026":215923,"Waco-Temple-Bryan|World Cup - 2026":14862,"Waco-Temple-Bryan|NHL Playoffs - 2026":22599,"Waco-Temple-Bryan|MLB Playoffs - 2026":42242,"Waco-Temple-Bryan|Men's March Madness - 2026":40217,"Waco-Temple-Bryan|Men's College Basketball - 2025-2026":110819,"Waco-Temple-Bryan|NHL Regular Season - 2025-2026":18622,"Waco-Temple-Bryan|Women's March Madness - 2026":37501,"Washington, DC (Hagrstwn)|College Football Playoffs - 2026-2027":15,"Washington, DC (Hagrstwn)|MLB Regular Season - 2026":1116,"Washington, DC (Hagrstwn)|NFL - 2026-2027":196,"Washington, DC (Hagrstwn)|NBA Playoffs - 2026":244,"Washington, DC (Hagrstwn)|College Football - 2026-2027":105,"Washington, DC (Hagrstwn)|NBA Regular Season - 2025-2026":2563,"Washington, DC (Hagrstwn)|MLB Playoffs - 2026":29,"Washington, DC (Hagrstwn)|NHL Playoffs - 2026":1,"Washington, DC (Hagrstwn)|Men's College Basketball - 2025-2026":4,"Washington, DC (Hagrstwn)|World Cup - 2026":18349,"Watertown|Men's March Madness - 2026":2059,"Watertown|NFL - 2026-2027":106201,"Watertown|College Football - 2026-2027":61633,"Watertown|World Cup - 2026":5687,"Watertown|NBA Playoffs - 2026":8451,"Watertown|NBA Regular Season - 2025-2026":24348,"Watertown|MLB Regular Season - 2026":203385,"Watertown|NHL Playoffs - 2026":50702,"Watertown|College Football Playoffs - 2026-2027":5879,"Watertown|MLB Playoffs - 2026":35002,"Watertown|Men's College Basketball - 2025-2026":51209,"Watertown|NHL Regular Season - 2025-2026":58503,"Watertown|Women's March Madness - 2026":7311,"Wausau-Rhinelander|College Football Playoffs - 2026-2027":7695,"Wausau-Rhinelander|Men's March Madness - 2026":37555,"Wausau-Rhinelander|NFL - 2026-2027":180573,"Wausau-Rhinelander|College Football - 2026-2027":131123,"Wausau-Rhinelander|MLB Playoffs - 2026":141206,"Wausau-Rhinelander|MLB Regular Season - 2026":527966,"Wausau-Rhinelander|World Cup - 2026":4819,"Wausau-Rhinelander|NHL Playoffs - 2026":33771,"Wausau-Rhinelander|NBA Playoffs - 2026":16267,"Wausau-Rhinelander|NBA Regular Season - 2025-2026":60465,"Wausau-Rhinelander|Men's College Basketball - 2025-2026":91142,"Wausau-Rhinelander|NHL Regular Season - 2025-2026":34033,"Wausau-Rhinelander|Women's March Madness - 2026":6613,"West Palm Beach-Ft. Pierce|Men's March Madness - 2026":-161238,"West Palm Beach-Ft. Pierce|College Football - 2026-2027":3214,"West Palm Beach-Ft. Pierce|World Cup - 2026":1876,"West Palm Beach-Ft. Pierce|MLB Playoffs - 2026":1750,"West Palm Beach-Ft. Pierce|Men's College Basketball - 2025-2026":1506,"West Palm Beach-Ft. Pierce|NBA Playoffs - 2026":225,"West Palm Beach-Ft. Pierce|MLB Regular Season - 2026":4351,"West Palm Beach-Ft. Pierce|NBA Regular Season - 2025-2026":792,"West Palm Beach-Ft. Pierce|College Football Playoffs - 2026-2027":283,"West Palm Beach-Ft. Pierce|NHL Playoffs - 2026":1024,"West Palm Beach-Ft. Pierce|NFL - 2026-2027":4317,"West Palm Beach-Ft. Pierce|NHL Regular Season - 2025-2026":1001,"West Palm Beach-Ft. Pierce|Women's March Madness - 2026":424,"Wheeling-Steubenville|World Cup - 2026":131,"Wheeling-Steubenville|MLB Playoffs - 2026":2655,"Wheeling-Steubenville|College Football - 2026-2027":14398,"Wheeling-Steubenville|Men's March Madness - 2026":1610,"Wheeling-Steubenville|Men's College Basketball - 2025-2026":4727,"Wheeling-Steubenville|NBA Playoffs - 2026":824,"Wheeling-Steubenville|MLB Regular Season - 2026":14190,"Wheeling-Steubenville|NBA Regular Season - 2025-2026":3130,"Wheeling-Steubenville|College Football Playoffs - 2026-2027":1310,"Wheeling-Steubenville|NHL Playoffs - 2026":582,"Wheeling-Steubenville|NFL - 2026-2027":9869,"Wheeling-Steubenville|NHL Regular Season - 2025-2026":1004,"Wheeling-Steubenville|Women's March Madness - 2026":1008,"Wichita Falls & Lawton|World Cup - 2026":2333,"Wichita Falls & Lawton|MLB Playoffs - 2026":5942,"Wichita Falls & Lawton|College Football - 2026-2027":35272,"Wichita Falls & Lawton|Men's March Madness - 2026":5429,"Wichita Falls & Lawton|Men's College Basketball - 2025-2026":12687,"Wichita Falls & Lawton|NBA Playoffs - 2026":4313,"Wichita Falls & Lawton|MLB Regular Season - 2026":59670,"Wichita Falls & Lawton|NBA Regular Season - 2025-2026":10414,"Wichita Falls & Lawton|College Football Playoffs - 2026-2027":2434,"Wichita Falls & Lawton|NHL Playoffs - 2026":4670,"Wichita Falls & Lawton|NFL - 2026-2027":33724,"Wichita Falls & Lawton|NHL Regular Season - 2025-2026":3138,"Wichita Falls & Lawton|Women's March Madness - 2026":3024,"Wichita-Hutchinson Plus|NBA Regular Season - 2025-2026":64,"Wichita-Hutchinson Plus|MLB Playoffs - 2026":8,"Wichita-Hutchinson Plus|College Football Playoffs - 2026-2027":0,"Wichita-Hutchinson Plus|World Cup - 2026":173,"Wichita-Hutchinson Plus|NFL - 2026-2027":9,"Wichita-Hutchinson Plus|MLB Regular Season - 2026":1,"Wichita-Hutchinson Plus|College Football - 2026-2027":36,"Wilkes Barre-Scranton-Hztn|World Cup - 2026":1331,"Wilkes Barre-Scranton-Hztn|MLB Playoffs - 2026":3742,"Wilkes Barre-Scranton-Hztn|College Football - 2026-2027":7777,"Wilkes Barre-Scranton-Hztn|Men's March Madness - 2026":1829,"Wilkes Barre-Scranton-Hztn|Men's College Basketball - 2025-2026":3790,"Wilkes Barre-Scranton-Hztn|NBA Playoffs - 2026":718,"Wilkes Barre-Scranton-Hztn|MLB Regular Season - 2026":22205,"Wilkes Barre-Scranton-Hztn|NBA Regular Season - 2025-2026":2057,"Wilkes Barre-Scranton-Hztn|College Football Playoffs - 2026-2027":580,"Wilkes Barre-Scranton-Hztn|NHL Playoffs - 2026":1366,"Wilkes Barre-Scranton-Hztn|NFL - 2026-2027":10282,"Wilkes Barre-Scranton-Hztn|NHL Regular Season - 2025-2026":2198,"Wilkes Barre-Scranton-Hztn|Women's March Madness - 2026":680,"Wilmington|Men's March Madness - 2026":28127,"Wilmington|Men's College Basketball - 2025-2026":170360,"Wilmington|College Football - 2026-2027":268441,"Wilmington|NFL - 2026-2027":220334,"Wilmington|NHL Playoffs - 2026":65612,"Wilmington|NBA Regular Season - 2025-2026":74423,"Wilmington|MLB Regular Season - 2026":87298,"Wilmington|MLB Playoffs - 2026":61692,"Wilmington|College Football Playoffs - 2026-2027":43034,"Wilmington|NBA Playoffs - 2026":31222,"Wilmington|World Cup - 2026":26976,"Wilmington|NHL Regular Season - 2025-2026":51252,"Wilmington|Women's March Madness - 2026":25624,"Yakima-Pasco-Rchlnd-Knnwck|College Football Playoffs - 2026-2027":3398,"Yakima-Pasco-Rchlnd-Knnwck|NBA Regular Season - 2025-2026":31745,"Yakima-Pasco-Rchlnd-Knnwck|NHL Regular Season - 2025-2026":13652,"Yakima-Pasco-Rchlnd-Knnwck|College Football - 2026-2027":102394,"Yakima-Pasco-Rchlnd-Knnwck|NFL - 2026-2027":171633,"Yakima-Pasco-Rchlnd-Knnwck|MLB Regular Season - 2026":402048,"Yakima-Pasco-Rchlnd-Knnwck|Men's March Madness - 2026":34170,"Yakima-Pasco-Rchlnd-Knnwck|NHL Playoffs - 2026":20400,"Yakima-Pasco-Rchlnd-Knnwck|NBA Playoffs - 2026":15290,"Yakima-Pasco-Rchlnd-Knnwck|MLB Playoffs - 2026":117914,"Yakima-Pasco-Rchlnd-Knnwck|Men's College Basketball - 2025-2026":76113,"Yakima-Pasco-Rchlnd-Knnwck|World Cup - 2026":8113,"Yakima-Pasco-Rchlnd-Knnwck|Women's March Madness - 2026":11634,"Youngstown|College Football Playoffs - 2026-2027":14775,"Youngstown|NFL - 2026-2027":211023,"Youngstown|College Football - 2026-2027":203359,"Youngstown|MLB Regular Season - 2026":357910,"Youngstown|World Cup - 2026":6408,"Youngstown|NBA Playoffs - 2026":37193,"Youngstown|NBA Regular Season - 2025-2026":177166,"Youngstown|NHL Playoffs - 2026":20054,"Youngstown|Men's March Madness - 2026":42595,"Youngstown|MLB Playoffs - 2026":57990,"Youngstown|Men's College Basketball - 2025-2026":77731,"Youngstown|NHL Regular Season - 2025-2026":27130,"Youngstown|Women's March Madness - 2026":12858,"Yuma-El Centro|World Cup - 2026":8064,"Yuma-El Centro|MLB Playoffs - 2026":39709,"Yuma-El Centro|College Football - 2026-2027":41012,"Yuma-El Centro|Men's March Madness - 2026":9477,"Yuma-El Centro|Men's College Basketball - 2025-2026":20733,"Yuma-El Centro|NBA Playoffs - 2026":9231,"Yuma-El Centro|MLB Regular Season - 2026":179994,"Yuma-El Centro|NBA Regular Season - 2025-2026":88676,"Yuma-El Centro|College Football Playoffs - 2026-2027":4668,"Yuma-El Centro|NHL Playoffs - 2026":4942,"Yuma-El Centro|NFL - 2026-2027":74489,"Yuma-El Centro|NHL Regular Season - 2025-2026":5941,"Yuma-El Centro|Women's March Madness - 2026":3307,"Zanesville|World Cup - 2026":2402,"Zanesville|MLB Playoffs - 2026":17701,"Zanesville|College Football - 2026-2027":93332,"Zanesville|Men's March Madness - 2026":12906,"Zanesville|Men's College Basketball - 2025-2026":34138,"Zanesville|NBA Playoffs - 2026":7042,"Zanesville|MLB Regular Season - 2026":94114,"Zanesville|NBA Regular Season - 2025-2026":30511,"Zanesville|College Football Playoffs - 2026-2027":9884,"Zanesville|NHL Playoffs - 2026":5836,"Zanesville|NFL - 2026-2027":57814,"Zanesville|NHL Regular Season - 2025-2026":12480,"Zanesville|Women's March Madness - 2026":5709,"Los Angeles|Men's March Madness - 2026":-452142,"Los Angeles|NFL - 2026-2027":3299582,"Los Angeles|College Football - 2026-2027":2126300,"Los Angeles|MLB Regular Season - 2026":93375664,"Los Angeles|NBA Regular Season - 2025-2026":-22206155,"Los Angeles|NBA Playoffs - 2026":1904104,"Los Angeles|World Cup - 2026":690728,"Los Angeles|NHL Playoffs - 2026":651781,"Los Angeles|College Football Playoffs - 2026-2027":287105,"Los Angeles|MLB Playoffs - 2026":4044834,"Los Angeles|Men's College Basketball - 2025-2026":1110160,"Los Angeles|NHL Regular Season - 2025-2026":805663,"Los Angeles|Women's March Madness - 2026":321519},"dates":{"NBA Regular Season - 2025-2026":{"live_range":"10/22/2025 - 04/12/2026","support_range":"10/22/2025 - 04/12/2026"},"NBA Playoffs - 2026":{"live_range":"04/15/2026 - 06/02/2026","support_range":"04/18/2026 - 06/21/2026"},"NHL Regular Season - 2025-2026":{"live_range":"10/07/2025 - 04/16/2026","support_range":"10/07/2025 - 04/16/2026"},"NHL Playoffs - 2026":{"live_range":"04/19/2026 - 06/23/2026","support_range":"04/18/2026 - 06/19/2026"},"Men's College Basketball - 2025-2026":{"live_range":"11/03/2025 - 03/15/2026","support_range":"11/03/2025 - 03/15/2026"},"Men's March Madness - 2026":{"live_range":"03/17/2026 - 04/06/2026","support_range":"03/16/2026 - 04/06/2026"},"Women's March Madness - 2026":{"live_range":"03/18/2026 - 04/05/2026","support_range":"03/15/2026 - 04/05/2026"},"World Cup - 2026":{"live_range":"06/11/2026 - 07/02/2026","support_range":"06/11/2026 - 07/19/2026"},"MLB Regular Season - 2026":{"live_range":"03/25/2026 - 09/27/2026","support_range":"03/05/2026 - 09/27/2026"},"MLB Playoffs - 2026":{"live_range":"09/29/2026 - 10/22/2026","support_range":"09/30/2026 - 11/01/2026"},"NFL - 2026-2027":{"live_range":"09/10/2026 - 01/10/2027","support_range":"08/14/2026 - 02/14/2026"},"College Football - 2026-2027":{"live_range":"08/29/2026 - 01/02/2027","support_range":"08/29/2026 - 01/02/2027"},"College Football Playoffs - 2026-2027":{"live_range":"12/18/2026 - 01/25/2027","support_range":"12/06/2026 - 01/25/2027"}},"templates":{"College Football - 2026-2027":"College Football - 2026-2027.pptx","College Football Playoffs - 2026-2027":"College Football Playoffs - 2026-2027.pptx","Men's March Madness - 2026":"Men's March Madness - 2026.pptx","MLB Playoffs - 2026":"MLB Playoffs - 2026.pptx","MLB Regular Season - 2026":"MLB Regular Season - 2026.pptx","NBA Playoffs - 2026":"NBA Playoffs - 2026.pptx","NFL - 2026-2027":"NFL - 2026-2027.pptx","NHL Playoffs - 2026":"NHL Playoffs - 2026.pptx","NHL Regular Season - 2025-2026":"NHL Regular Season - 2025-2026.pptx","Women's March Madness - 2026":"Women's March Madness - 2026.pptx","World Cup - 2026":"World Cup - 2026.pptx"}}
+;
+
+// ============ CONSTANTS ============
+const PACKAGE_CPMS = {
+  'Addressable': 40,
+  'Custom Nets': 35,
+  'Audience': 29
+};
+
+// ============ STATE ============
+let state = {
+  hpo: null,
+  dma: null,
+  budget: 0,
+  liveCpm: 0,
+  liveImps: 0,
+  liveBudget: 0,
+  supportBudget: 0,
+  maxLiveImps: 0,
+  liveDates: '',
+  supportDates: '',
+  sport: '',
+  packages: {},
+  templateFile: null,
+  templateZip: null
+};
+
+// ============ INIT ============
+function init() {
+  // Populate HPO dropdown
+  const hpoSelect = document.getElementById('hpo-select');
+  DATA.hpos.forEach(h => {
+    const opt = document.createElement('option');
+    opt.value = h.name;
+    opt.textContent = h.name;
+    hpoSelect.appendChild(opt);
+  });
+
+  // Setup DMA searchable dropdown
+  setupDMADropdown();
+
+  // Event listeners
+  hpoSelect.addEventListener('change', onParamsChanged);
+  document.getElementById('budget-input').addEventListener('input', onBudgetInput);
+  document.getElementById('budget-input').addEventListener('change', onParamsChanged);
+
+  // File drop
+  const fileDrop = document.getElementById('file-drop');
+  const fileInput = document.getElementById('file-input');
+
+  fileDrop.addEventListener('click', () => fileInput.click());
+  fileDrop.addEventListener('dragover', e => { e.preventDefault(); fileDrop.classList.add('dragover'); });
+  fileDrop.addEventListener('dragleave', () => fileDrop.classList.remove('dragover'));
+  fileDrop.addEventListener('drop', e => {
+    e.preventDefault();
+    fileDrop.classList.remove('dragover');
+    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => {
+    if (e.target.files.length) handleFile(e.target.files[0]);
+  });
+
+  document.getElementById('btn-generate').addEventListener('click', generatePptx);
+  document.getElementById('btn-scan').addEventListener('click', scanTemplate);
+}
+
+// ============ DMA SEARCHABLE DROPDOWN ============
+function setupDMADropdown() {
+  const input = document.getElementById('dma-search');
+  const dropdown = document.getElementById('dma-dropdown');
+  const hiddenInput = document.getElementById('dma-value');
+  let highlighted = -1;
+
+  function renderItems(filter = '') {
+    const f = filter.toLowerCase();
+    const items = DATA.dmas.filter(d => d.toLowerCase().includes(f));
+    dropdown.innerHTML = '';
+    highlighted = -1;
+    items.forEach((dma, i) => {
+      const div = document.createElement('div');
+      div.className = 'dropdown-item';
+      div.textContent = dma;
+      div.addEventListener('mousedown', e => {
+        e.preventDefault();
+        selectDMA(dma);
+      });
+      dropdown.appendChild(div);
+    });
+    dropdown.classList.toggle('open', items.length > 0);
+  }
+
+  function selectDMA(dma) {
+    input.value = dma;
+    hiddenInput.value = dma;
+    dropdown.classList.remove('open');
+    onParamsChanged();
+  }
+
+  input.addEventListener('focus', () => renderItems(input.value));
+  input.addEventListener('input', () => renderItems(input.value));
+  input.addEventListener('blur', () => setTimeout(() => dropdown.classList.remove('open'), 150));
+
+  input.addEventListener('keydown', e => {
+    const items = dropdown.querySelectorAll('.dropdown-item');
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      highlighted = Math.min(highlighted + 1, items.length - 1);
+      items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      if (items[highlighted]) items[highlighted].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      highlighted = Math.max(highlighted - 1, 0);
+      items.forEach((it, i) => it.classList.toggle('highlighted', i === highlighted));
+      if (items[highlighted]) items[highlighted].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && highlighted >= 0 && items[highlighted]) {
+      e.preventDefault();
+      selectDMA(items[highlighted].textContent);
+    }
+  });
+}
+
+// ============ BUDGET FORMATTING ============
+function onBudgetInput(e) {
+  let raw = e.target.value.replace(/[^0-9.]/g, '');
+  if (raw) {
+    const num = parseFloat(raw);
+    if (!isNaN(num)) {
+      // Format with commas while typing
+      const parts = raw.split('.');
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+      e.target.value = '$' + parts.join('.');
+    }
+  } else {
+    e.target.value = '';
+  }
+}
+
+function parseBudget(str) {
+  return parseFloat(str.replace(/[^0-9.]/g, '')) || 0;
+}
+
+// ============ CALCULATIONS ============
+function onParamsChanged() {
+  const hpo = document.getElementById('hpo-select').value;
+  const dma = document.getElementById('dma-value').value;
+  const budget = parseBudget(document.getElementById('budget-input').value);
+
+  if (!hpo || !dma || budget <= 0) {
+    document.getElementById('results-card').classList.add('hidden');
+    document.getElementById('generate-card').classList.add('hidden');
+    return;
+  }
+
+  // Lookup HPO data
+  const hpoData = DATA.hpos.find(h => h.name === hpo);
+  const liveCpm = DATA.live_cpm[hpo];
+  const dateData = DATA.dates[hpo];
+  const maxKey = `${dma}|${hpo}`;
+  const maxLiveImps = DATA.max_live_imps[maxKey];
+
+  if (liveCpm === undefined) {
+    showValidation('error', `No Live CPM found for "${hpo}"`);
+    document.getElementById('results-card').classList.remove('hidden');
+    document.getElementById('generate-card').classList.add('hidden');
+    return;
+  }
+
+  // Calculate
+  const liveBudget = budget * 0.5;
+  const supportBudget = budget * 0.5;
+  const liveImps = Math.round((liveBudget / liveCpm) * 1000);
+
+  // Update state
+  state = {
+    ...state,
+    hpo, dma, budget, liveCpm, liveImps, liveBudget, supportBudget,
+    maxLiveImps: maxLiveImps !== undefined ? maxLiveImps : null,
+    liveDates: dateData ? dateData.live_range : 'N/A',
+    supportDates: dateData ? dateData.support_range : 'N/A',
+    sport: hpoData ? hpoData.sport : '',
+    packages: {}
+  };
+
+  // Validate against max live imps
+  let validationOk = true;
+  if (maxLiveImps !== undefined && liveImps > maxLiveImps) {
+    showValidation('error',
+      `Budget too large: ${fmt(liveImps)} live imps exceeds max of ${fmt(maxLiveImps)} for ${dma} / ${hpo}. Reduce budget to $${fmt(Math.floor((maxLiveImps * liveCpm / 1000) * 2))} or less.`
+    );
+    validationOk = false;
+  } else if (maxLiveImps === undefined) {
+    showValidation('warn', `No max imps data found for ${dma} + ${hpo}. Proceeding without cap validation.`);
+  } else {
+    showValidation('ok', `Within cap: ${fmt(liveImps)} / ${fmt(maxLiveImps)} max live imps (${Math.round(liveImps/maxLiveImps*100)}% utilized)`);
+  }
+
+  // Populate live section
+  document.getElementById('r-live-cpm').textContent = fmt(liveCpm);
+  document.getElementById('r-live-imps').textContent = fmt(liveImps);
+  document.getElementById('r-live-invest').textContent = fmt(liveBudget);
+  document.getElementById('r-live-dates').textContent = state.liveDates;
+
+  // Calculate packages
+  const pkgGrid = document.getElementById('packages-grid');
+  pkgGrid.innerHTML = '';
+
+  for (const [name, cpm] of Object.entries(PACKAGE_CPMS)) {
+    const supportImps = Math.round((supportBudget / cpm) * 1000);
+    const totalInvestment = budget;
+    const totalImps = liveImps + supportImps;
+    const eCpm = totalImps > 0 ? (totalInvestment / totalImps) * 1000 : 0;
+
+    state.packages[name] = { cpm, supportImps, totalInvestment, totalImps, eCpm };
+
+    const card = document.createElement('div');
+    card.className = 'package-card';
+    card.innerHTML = `
+      <h4>${name} <span style="color:var(--text-muted);font-weight:400;font-size:12px;">($${cpm} CPM)</span></h4>
+      <div class="pkg-stat"><span class="pkg-label">Support Dates</span><span class="pkg-value" style="font-size:11px;">${state.supportDates}</span></div>
+      <div class="pkg-stat"><span class="pkg-label">Support Imps</span><span class="pkg-value">${fmt(supportImps)}</span></div>
+      <div class="pkg-stat" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">
+        <span class="pkg-label">Total Investment</span><span class="pkg-value">$${fmt(totalInvestment)}</span>
+      </div>
+      <div class="pkg-stat"><span class="pkg-label">Total Imps</span><span class="pkg-value">${fmt(totalImps)}</span></div>
+      <div class="pkg-stat"><span class="pkg-label">eCPM</span><span class="pkg-value">$${eCpm.toFixed(2)}</span></div>
+    `;
+    pkgGrid.appendChild(card);
+  }
+
+  document.getElementById('results-card').classList.remove('hidden');
+
+  // Show generate card
+  if (validationOk || maxLiveImps === undefined) {
+    document.getElementById('generate-card').classList.remove('hidden');
+    document.getElementById('expected-template').textContent = DATA.templates[hpo] || hpo + '.pptx';
+    updateReplacementsPreview();
+  } else {
+    document.getElementById('generate-card').classList.add('hidden');
+  }
+}
+
+function showValidation(type, msg) {
+  const el = document.getElementById('validation-status');
+  el.innerHTML = `<span class="status ${type === 'error' ? 'error' : type === 'warn' ? 'warn' : 'ok'}">${
+    type === 'ok' ? '&#10003;' : type === 'warn' ? '&#9888;' : '&#10007;'
+  } ${msg}</span>`;
+}
+
+function fmt(n) {
+  if (typeof n !== 'number') return String(n);
+  return n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+}
+
+// ============ REPLACEMENT MAPPINGS ============
+// ============ REPLACEMENT MAPPINGS ============
+// The template uses these exact placeholder patterns (from XML analysis):
+//
+// GLOBAL (same value for all occurrences):
+//   "XXX DMA"        → "{dma} DMA"  (title + within option descriptions)
+//   "XXX broadcasts"  → "{sport} broadcasts"
+//   "XXX viewers"     → "{sport} viewers"
+//
+// SINGLE OCCURRENCE:
+//   "$XX CPM"                → live CPM (only live has $XX; options have $40/$35/$29)
+//   "XXX,XXX Impressions"    → live imps (only live says "Impressions"; options say "Imps")
+//
+// NTH-OCCURRENCE (positional, ordered as they appear in slide XML):
+//   "X/XX/XX – X/XX/XX"                 → 1st: live dates, 2nd: addr, 3rd: custom, 4th: audience
+//   "XXX,XXX Imps"                       → 1st: addr, 2nd: custom, 3rd: audience
+//   "Package Total Imps: XXX,XXX"        → 1st: addr, 2nd: custom, 3rd: audience
+//   "Package Total Investment: $XX,XXX"  → 1st: addr, 2nd: custom, 3rd: audience
+//
+// MULTI-RUN (eCPM is split across 3 XML runs: "Package " | "eCPM" | ": $XX"):
+//   ": $XX" in eCPM context              → 1st: addr, 2nd: custom, 3rd: audience
+
+function getReplacementPlan() {
+  const p = state.packages;
+  const plan = {
+    // Section 1: Global replacements (replace ALL occurrences with same value)
+    global: [
+      { find: 'XXX DMA', replace: `${state.dma} DMA` },
+      { find: 'XXX broadcasts', replace: `${state.sport} broadcasts` },
+      { find: 'XXX viewers', replace: `${state.sport} viewers` },
+    ],
+
+    // Section 2: Single-occurrence replacements
+    single: [
+      { find: '$XX CPM', replace: `$${fmt(state.liveCpm)} CPM` },
+      { find: 'XXX,XXX Impressions', replace: `${fmt(state.liveImps)} Impressions` },
+    ],
+
+    // Section 3: Nth-occurrence replacements
+    // Each entry: { find: pattern, replacements: [1st, 2nd, 3rd, ...] }
+    positional: [
+      {
+        find: 'X/XX/XX \u2013 X/XX/XX',
+        replacements: [
+          state.liveDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+          state.supportDates.replace(/ - /g, ' \u2013 '),
+        ]
+      },
+      {
+        find: 'XXX,XXX Imps',
+        replacements: [
+          `${fmt(p['Addressable']?.supportImps || 0)} Imps`,
+          `${fmt(p['Custom Nets']?.supportImps || 0)} Imps`,
+          `${fmt(p['Audience']?.supportImps || 0)} Imps`,
+        ]
+      },
+      {
+        find: 'Package Total Imps: XXX,XXX',
+        replacements: [
+          `Package Total Imps: ${fmt(p['Addressable']?.totalImps || 0)}`,
+          `Package Total Imps: ${fmt(p['Custom Nets']?.totalImps || 0)}`,
+          `Package Total Imps: ${fmt(p['Audience']?.totalImps || 0)}`,
+        ]
+      },
+      {
+        find: 'Package Total Investment: $XX,XXX',
+        replacements: [
+          `Package Total Investment: $${fmt(p['Addressable']?.totalInvestment || 0)}`,
+          `Package Total Investment: $${fmt(p['Custom Nets']?.totalInvestment || 0)}`,
+          `Package Total Investment: $${fmt(p['Audience']?.totalInvestment || 0)}`,
+        ]
+      },
+    ],
+
+    // Section 4: eCPM multi-run (the ": $XX" portion in "Package eCPM: $XX")
+    ecpm: [
+      { find: ': $XX', replacements: [
+        `: $${p['Addressable']?.eCpm.toFixed(2) || '0.00'}`,
+        `: $${p['Custom Nets']?.eCpm.toFixed(2) || '0.00'}`,
+        `: $${p['Audience']?.eCpm.toFixed(2) || '0.00'}`,
+      ]}
+    ]
+  };
+
+  return plan;
+}
+
+function updateReplacementsPreview() {
+  const tbody = document.getElementById('replacements-body');
+  tbody.innerHTML = '';
+  const plan = getReplacementPlan();
+
+  function addRow(find, replace, section) {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escHtml(find)}</td><td>${escHtml(replace)}</td>`;
+    tbody.appendChild(tr);
+  }
+
+  // Global
+  plan.global.forEach(r => addRow(r.find + ' (all)', r.replace));
+  // Single
+  plan.single.forEach(r => addRow(r.find, r.replace));
+  // Positional
+  plan.positional.forEach(p => {
+    const labels = ['Live', 'Addressable', 'Custom Nets', 'Audience'];
+    p.replacements.forEach((val, i) => {
+      addRow(`${p.find} (#${i+1} → ${labels[i] || i+1})`, val);
+    });
+  });
+  // eCPM
+  plan.ecpm.forEach(e => {
+    const labels = ['Addressable', 'Custom Nets', 'Audience'];
+    e.replacements.forEach((val, i) => {
+      addRow(`Package eCPM${e.find} (#${i+1} → ${labels[i]})`, `Package eCPM${val}`);
+    });
+  });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// Helper: replace the Nth occurrence of a pattern in a string
+function replaceNth(str, find, replaceVal, n) {
+  const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let count = 0;
+  return str.replace(new RegExp(escaped, 'g'), (match) => {
+    count++;
+    return count === n ? replaceVal : match;
+  });
+}
+
+// ============ FILE HANDLING ============
+async function handleFile(file) {
+  if (!file.name.endsWith('.pptx')) {
+    alert('Please select a .pptx file');
+    return;
+  }
+
+  try {
+    const arrayBuffer = await file.arrayBuffer();
+    state.templateZip = await JSZip.loadAsync(arrayBuffer);
+    state.templateFile = file;
+
+    document.getElementById('template-loaded').classList.remove('hidden');
+    document.getElementById('loaded-filename').textContent = file.name;
+    document.getElementById('file-drop').style.display = 'none';
+  } catch (e) {
+    alert('Error reading file: ' + e.message);
+  }
+}
+
+// ============ SCAN TEMPLATE ============
+async function scanTemplate() {
+  if (!state.templateZip) return;
+
+  const scanCard = document.getElementById('scan-card');
+  const scanResults = document.getElementById('scan-results');
+  scanCard.classList.remove('hidden');
+  scanResults.innerHTML = '';
+
+  const slideFiles = Object.keys(state.templateZip.files)
+    .filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/))
+    .sort();
+
+  for (const slideFile of slideFiles) {
+    const xml = await state.templateZip.file(slideFile).async('string');
+
+    scanResults.innerHTML += `<div style="color:var(--accent);margin-top:8px;font-weight:600;">${slideFile}</div>`;
+
+    // Extract paragraphs and show full text (joining runs within each paragraph)
+    const paragraphs = xml.match(/<a:p[\s>][\s\S]*?<\/a:p>/g) || [];
+    paragraphs.forEach((p, idx) => {
+      const runs = p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+      const fullText = runs.map(r => r.replace(/<a:t[^>]*>/, '').replace(/<\/a:t>/, '')).join('');
+      if (fullText.trim() && /X/.test(fullText)) {
+        const runCount = runs.length;
+        const extra = runCount > 1 ? ` <span style="color:var(--yellow);">[${runCount} runs]</span>` : '';
+        scanResults.innerHTML += `<div style="padding-left:16px;">P${idx}: "${escHtml(fullText.trim())}"${extra}</div>`;
+      }
+    });
+  }
+
+  if (scanResults.innerHTML === '') {
+    scanResults.innerHTML = '<div style="color:var(--text-dim);">No X-pattern placeholders found.</div>';
+  }
+}
+
+// ============ GENERATE PPTX ============
+async function generatePptx() {
+  if (!state.templateZip) {
+    alert('Please load a template first.');
+    return;
+  }
+
+  const logEl = document.getElementById('log');
+  logEl.classList.remove('hidden');
+  logEl.innerHTML = '';
+
+  function log(msg, cls = '') {
+    logEl.innerHTML += `<div class="${cls}">${msg}</div>`;
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  const plan = getReplacementPlan();
+  log('Starting generation...');
+
+  // Clone the zip
+  const newZip = new JSZip();
+  for (const [path, file] of Object.entries(state.templateZip.files)) {
+    if (file.dir) continue;
+    const content = await file.async('arraybuffer');
+    newZip.file(path, content);
+  }
+
+  // Process slide XMLs
+  const slideFiles = Object.keys(state.templateZip.files)
+    .filter(f => f.match(/ppt\/slides\/slide\d+\.xml$/))
+    .sort();
+
+  let totalReplacements = 0;
+
+  for (const slideFile of slideFiles) {
+    let xml = await state.templateZip.file(slideFile).async('string');
+    const origXml = xml;
+    let slideReplacements = 0;
+
+    // ---- STEP 1: Global replacements (all occurrences get same value) ----
+    for (const r of plan.global) {
+      const escaped = r.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped, 'g');
+      const before = xml;
+      xml = xml.replace(regex, r.replace);
+      if (xml !== before) {
+        const count = (before.match(regex) || []).length;
+        slideReplacements += count;
+        log(`  Global: "${r.find}" → "${r.replace}" (${count}x)`, 'success');
+      }
+    }
+
+    // ---- STEP 2: Single-occurrence replacements ----
+    for (const r of plan.single) {
+      const escaped = r.find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(escaped);
+      if (regex.test(xml)) {
+        xml = xml.replace(regex, r.replace);
+        slideReplacements++;
+        log(`  Single: "${r.find}" → "${r.replace}"`, 'success');
+      }
+    }
+
+    // ---- STEP 3: Positional (nth-occurrence) replacements ----
+    for (const rule of plan.positional) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const before = xml;
+        // Always replace the FIRST remaining occurrence (since previous ones already got replaced)
+        xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== before) {
+          slideReplacements++;
+          const labels = ['Live', 'Addressable', 'Custom Nets', 'Audience'];
+          log(`  Positional: "${rule.find}" #${i+1} (${labels[i] || i+1}) → "${rule.replacements[i]}"`, 'success');
+        }
+      }
+    }
+
+    // ---- STEP 4: eCPM multi-run handling ----
+    // "Package eCPM: $XX" is split across runs: "Package " | "eCPM" | ": $XX"
+    // We target the ": $XX" text in <a:t> tags that follow an "eCPM" run
+    for (const rule of plan.ecpm) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const before = xml;
+        xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== before) {
+          slideReplacements++;
+          const labels = ['Addressable', 'Custom Nets', 'Audience'];
+          log(`  eCPM: "${rule.find}" #${i+1} (${labels[i]}) → "${rule.replacements[i]}"`, 'success');
+        }
+      }
+    }
+
+    // Save modified XML
+    if (xml !== origXml) {
+      newZip.file(slideFile, xml);
+      totalReplacements += slideReplacements;
+      log(`  ${slideFile}: ${slideReplacements} replacements made`, 'success');
+    }
+  }
+
+  if (totalReplacements === 0) {
+    log('\u26A0 No replacements made. Template may use different placeholder patterns.', 'warn');
+    log('Try "Scan Template Text" to inspect the template.', 'warn');
+  } else {
+    log(`\u2713 Total: ${totalReplacements} replacements across ${slideFiles.length} slide(s).`, 'success');
+  }
+
+  // Generate and download
+  log('Generating .pptx file...');
+  try {
+    const blob = await newZip.generateAsync({
+      type: 'blob',
+      mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    const filename = `${state.hpo} - ${state.dma}.pptx`;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    log(`\u2713 Downloaded: ${filename}`, 'success');
+  } catch (e) {
+    log(`\u2717 Error generating file: ${e.message}`, 'err');
+  }
+}
+
+// ============ BOOT ============
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>
