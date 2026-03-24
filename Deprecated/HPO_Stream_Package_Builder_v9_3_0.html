@@ -1,0 +1,1813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="dark">
+<title>HPO Stream Package Builder v9.3.0</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800&display=swap">
+<style>
+/* -------------------------------------------
+   SPECTRUM REACH DESIGN SYSTEM v9.3.0
+   Dark navy + teal/green glowing borders
+   Breathing neon animation
+------------------------------------------- */
+:root {
+  --bg-deep:    #06101e;
+  --bg:         #091628;
+  --bg-panel:   #0c1e38;
+  --bg-raised:  #112a4a;
+  --bg-input:   #0a1628;
+  --glow:       #1bc8a0;
+  --glow-bright:#2eecc0;
+  --glow-soft:  rgba(27,200,160,0.12);
+  --glow-med:   rgba(27,200,160,0.25);
+  --glow-line:  rgba(46,236,192,0.45);
+  --accent:     #1bc8a0;
+  --accent-hi:  #3ef0c8;
+  --blue:       #2d7ec7;
+  --blue-bright:#4fa8e8;
+  --white:      #eaf2fb;
+  --text:       #b8cde0;
+  --text-dim:   #6b8aaa;
+  --text-muted: #3d5a78;
+  --green:      #34d399;
+  --green-bg:   rgba(52,211,153,0.08);
+  --red:        #f87171;
+  --red-bg:     rgba(248,113,113,0.08);
+  --yellow:     #fbbf24;
+  --yellow-bg:  rgba(251,191,36,0.08);
+  --cyan:       #22d3ee;
+  --radius:     10px;
+  --radius-sm:  6px;
+  --glow-shadow: 0 0 18px rgba(27,200,160,0.18), 0 0 6px rgba(27,200,160,0.10);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  background: linear-gradient(165deg, #060e1c 0%, #091828 40%, #0a1a30 100%);
+  color: var(--text);
+  min-height: 100vh;
+  line-height: 1.5;
+  color-scheme: dark;
+}
+
+/* ── App Layout ── */
+.app {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 36px 28px 80px;
+}
+
+/* ── Header ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  padding-bottom: 18px;
+  border-bottom: 1.5px solid var(--glow-line);
+}
+
+.header-left h1 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--white);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.header-logo {
+  height: 32px;
+  width: auto;
+  opacity: 0.9;
+}
+
+/* ── Version Line with Release Notes ── */
+.version-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.release-notes-toggle {
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 0.2s;
+  user-select: none;
+}
+
+.release-notes-toggle:hover {
+  color: var(--glow-bright);
+}
+
+.release-notes-panel {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease, margin 0.35s ease;
+  background: var(--bg-panel);
+  border-radius: var(--radius-sm);
+  margin-top: 0;
+  font-size: 11px;
+  line-height: 1.7;
+}
+
+.release-notes-panel.open {
+  max-height: 500px;
+  padding: 18px 22px;
+  margin-top: 14px;
+  border: 1px solid rgba(46,236,192,0.15);
+}
+
+.release-notes-panel h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--glow-bright);
+  margin-bottom: 12px;
+}
+
+.release-entry {
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(46,236,192,0.08);
+}
+
+.release-entry:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.release-version {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 700;
+  color: var(--white);
+  font-size: 11px;
+}
+
+.release-date {
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-left: 8px;
+}
+
+.release-changes {
+  color: var(--text-dim);
+  margin-top: 4px;
+  padding-left: 12px;
+}
+
+.release-changes li {
+  margin-bottom: 2px;
+}
+
+/* ── Breathing Neon Animation ── */
+@keyframes breathingGlow {
+  0%, 100% {
+    border-color: rgba(46,236,192,0.35);
+    box-shadow: 0 0 12px rgba(27,200,160,0.12), 0 0 4px rgba(27,200,160,0.08);
+  }
+  50% {
+    border-color: rgba(46,236,192,0.65);
+    box-shadow: 0 0 24px rgba(27,200,160,0.28), 0 0 8px rgba(27,200,160,0.18);
+  }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.7; }
+  94% { opacity: 1; }
+  96% { opacity: 0.85; }
+  97% { opacity: 1; }
+}
+
+/* ── Sections / Cards ── */
+.section {
+  background: var(--bg);
+  border: 1.5px solid var(--glow-line);
+  border-radius: var(--radius);
+  margin-bottom: 24px;
+  overflow: visible;
+  animation: breathingGlow 4s ease-in-out infinite, flicker 8s ease-in-out infinite;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 22px;
+  background: linear-gradient(135deg, var(--bg-raised) 0%, var(--bg-panel) 100%);
+  border-bottom: 1.5px solid var(--glow-line);
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.section-header h2 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--glow-bright);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.section-header .badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-ok   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+.badge-warn { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.25); }
+.badge-err  { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+
+.section-body {
+  padding: 24px;
+  overflow: visible;
+  position: relative;
+}
+
+/* ── Form Controls ── */
+.input-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+.field label {
+  display: block;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  margin-bottom: 8px;
+}
+
+/* ── Unified input styling for ALL fields ── */
+.field select,
+.field input[type="text"],
+.search-wrap input[type="text"],
+#dma-search,
+#budget-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--bg-input) !important;
+  border: 1.5px solid rgba(46,236,192,0.25);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted) !important;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  color-scheme: dark;
+}
+
+/* ── Selected state: bright white text ── */
+.field select.has-value,
+.field input[type="text"].has-value,
+.search-wrap input[type="text"].has-value,
+#dma-search.has-value,
+#budget-input.has-value {
+  color: var(--white) !important;
+}
+
+.field select:focus,
+.field input[type="text"]:focus,
+.search-wrap input[type="text"]:focus {
+  border-color: var(--glow);
+  box-shadow: 0 0 0 3px var(--glow-soft), 0 0 12px var(--glow-soft);
+}
+
+.field select:hover,
+.field input[type="text"]:hover,
+.search-wrap input[type="text"]:hover {
+  border-color: rgba(46,236,192,0.4);
+}
+
+.field select option {
+  background: var(--bg-panel);
+  color: var(--white);
+}
+
+.field input::placeholder { color: var(--text-muted) !important; }
+.field input:-webkit-autofill { -webkit-box-shadow: 0 0 0 30px var(--bg-input) inset !important; -webkit-text-fill-color: var(--white) !important; }
+
+/* Select arrow */
+.field select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b8aaa' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: right 14px center !important;
+  padding-right: 36px;
+}
+
+/* ── Rate Class Toggle Buttons ── */
+.rate-class-toggles {
+  display: flex;
+  gap: 0;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1.5px solid rgba(46,236,192,0.25);
+}
+
+.rate-toggle {
+  flex: 1;
+  padding: 12px 8px;
+  background: var(--bg-input);
+  border: none;
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-right: 1px solid rgba(46,236,192,0.15);
+}
+
+.rate-toggle:last-child {
+  border-right: none;
+}
+
+.rate-toggle:hover {
+  background: rgba(27,200,160,0.08);
+  color: var(--text);
+}
+
+.rate-toggle.active {
+  background: linear-gradient(135deg, var(--glow) 0%, #15a080 100%);
+  color: #06101e;
+}
+
+/* ── Special Rate Dropdown ── */
+.special-rate-dropdown {
+  display: none;
+  margin-top: 8px;
+  background: var(--bg-panel);
+  border: 1.5px solid rgba(46,236,192,0.25);
+  border-radius: var(--radius-sm);
+  padding: 8px;
+  animation: fadeSlideIn 0.2s ease;
+}
+
+.special-rate-dropdown.open {
+  display: block;
+}
+
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.special-rate-option {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text);
+  transition: all 0.15s;
+}
+
+.special-rate-option:hover {
+  background: var(--glow-soft);
+  color: var(--glow-bright);
+}
+
+.special-rate-option.selected {
+  background: var(--glow-soft);
+  color: var(--glow-bright);
+  border-left: 2px solid var(--glow);
+}
+
+/* ── Searchable DMA dropdown ── */
+.search-wrap { position: relative; }
+
+.dropdown-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg-panel);
+  border: 1.5px solid var(--glow-line);
+  border-radius: var(--radius-sm);
+  z-index: 9999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 16px rgba(27,200,160,0.15);
+}
+.dropdown-list.open { display: block; }
+
+.dropdown-item {
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+  transition: background 0.1s;
+}
+.dropdown-item:hover,
+.dropdown-item.hl {
+  background: var(--glow-soft);
+  color: var(--glow-bright);
+}
+
+.dropdown-list::-webkit-scrollbar { width: 5px; }
+.dropdown-list::-webkit-scrollbar-track { background: transparent; }
+.dropdown-list::-webkit-scrollbar-thumb { background: var(--glow-line); border-radius: 3px; }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--glow) 0%, #15a080 100%);
+  color: #06101e;
+  box-shadow: 0 2px 12px rgba(27,200,160,0.3);
+}
+.btn-primary:hover { box-shadow: 0 4px 20px rgba(27,200,160,0.5); filter: brightness(1.1); transform: translateY(-1px); }
+.btn-primary:disabled { opacity: 0.3; cursor: not-allowed; filter: none; box-shadow: none; transform: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1.5px solid rgba(46,236,192,0.2);
+}
+.btn-ghost:hover { border-color: var(--glow-line); color: var(--glow-bright); }
+
+.btn-sm { padding: 7px 14px; font-size: 10px; }
+
+.confirm-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(46,236,192,0.08);
+}
+
+/* ── Results: Live + Packages ── */
+.live-panel {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  gap: 1px;
+  background: rgba(46,236,192,0.12);
+  border: 1.5px solid var(--glow-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  margin-bottom: 20px;
+}
+
+.live-stat {
+  background: var(--bg-panel);
+  padding: 16px 18px;
+  text-align: center;
+}
+
+.live-stat .lbl {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.2px;
+  color: var(--text-dim);
+  margin-bottom: 6px;
+}
+
+.live-stat .val {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--white);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-stat .val.sm { font-size: 12px; font-weight: 500; }
+
+.packages-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.pkg-card {
+  background: var(--bg-panel);
+  border: 1.5px solid var(--glow-line);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.pkg-card:hover { border-color: var(--glow-bright); box-shadow: 0 0 16px rgba(27,200,160,0.15); }
+
+.pkg-head {
+  padding: 12px 16px;
+  background: linear-gradient(135deg, var(--bg-raised), var(--bg-panel));
+  border-bottom: 1.5px solid var(--glow-line);
+}
+
+.pkg-head h4 {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--white);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.pkg-head .sub {
+  font-size: 11px;
+  color: var(--glow-bright);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.pkg-body { padding: 14px 16px; }
+
+.pkg-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 12px;
+}
+
+.pkg-row .k { color: var(--text-dim); }
+.pkg-row .v { color: var(--white); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.pkg-divider {
+  margin: 10px 0;
+  border-top: 1px solid rgba(46,236,192,0.12);
+}
+
+/* ── Total row highlight ── */
+.pkg-row.total .v { color: var(--glow-bright); font-weight: 700; }
+
+/* ── Validation ── */
+.validation-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+  margin-bottom: 18px;
+}
+.validation-bar.ok   { background: var(--green-bg); color: var(--green); border: 1px solid rgba(52,211,153,0.2); }
+.validation-bar.warn { background: var(--yellow-bg); color: var(--yellow); border: 1px solid rgba(251,191,36,0.2); }
+.validation-bar.err  { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.2); }
+
+/* ── Template / Generate ── */
+.file-drop {
+  border: 1.5px dashed var(--glow-line);
+  border-radius: var(--radius-sm);
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+}
+.file-drop:hover, .file-drop.dragover {
+  border-color: var(--glow-bright);
+  background: var(--glow-soft);
+}
+.file-drop p { color: var(--text-dim); font-size: 13px; }
+.file-drop .hint { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+.loaded-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg-panel);
+  border: 1.5px solid rgba(52,211,153,0.25);
+  border-radius: var(--radius-sm);
+}
+
+.actions-row {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 18px;
+}
+
+/* ── Config Panel ── */
+.config-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.config-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(46,236,192,0.1);
+}
+.config-table td {
+  padding: 6px 12px;
+  border-bottom: 1px solid rgba(46,236,192,0.05);
+  color: var(--text);
+}
+.config-table td:first-child { color: var(--glow-bright); font-weight: 500; }
+.config-table td:nth-child(2) { color: var(--text-dim); }
+.config-table .count {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--glow-soft);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--glow-bright);
+}
+
+/* ── Replacements preview ── */
+.repl-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  margin-top: 8px;
+}
+.repl-table th {
+  text-align: left;
+  padding: 8px 12px;
+  font-family: 'Montserrat', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  border-bottom: 1px solid rgba(46,236,192,0.12);
+}
+.repl-table td {
+  padding: 5px 12px;
+  border-bottom: 1px solid rgba(46,236,192,0.05);
+  font-family: 'Inter', monospace;
+  font-size: 11px;
+}
+.repl-table td:first-child { color: var(--red); }
+.repl-table td:last-child  { color: var(--green); }
+
+/* ── Log ── */
+.log {
+  margin-top: 12px;
+  max-height: 200px;
+  overflow-y: auto;
+  background: var(--bg-deep);
+  border: 1px solid rgba(46,236,192,0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  font-family: 'Inter', monospace;
+  font-size: 11px;
+  color: var(--text-dim);
+  line-height: 1.8;
+}
+.log .success { color: var(--green); }
+.log .warn    { color: var(--yellow); }
+.log .err     { color: var(--red); }
+
+/* ── Utility ── */
+.hidden { display: none !important; }
+
+details summary {
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+details summary:hover { color: var(--glow-bright); }
+
+.step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--glow-soft);
+  border: 1.5px solid var(--glow-line);
+  color: var(--glow-bright);
+  font-family: 'Montserrat', sans-serif;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+/* ── Section sub-labels ── */
+.sub-label {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(46,236,192,0.08);
+}
+
+@media (max-width: 768px) {
+  .input-row     { grid-template-columns: 1fr; }
+  .packages-row  { grid-template-columns: 1fr; }
+  .live-panel    { grid-template-columns: repeat(2, 1fr); }
+  .release-notes-panel.open { max-height: 400px; }
+  .header { flex-direction: column; gap: 12px; }
+  .header-right { width: 100%; justify-content: space-between; }
+}
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="app">
+
+<!-- ════ HEADER ════ -->
+<div class="header">
+  <div class="header-left">
+    <h1>HPO Stream Package Builder</h1>
+    <div class="version-line">
+      <span>v9.3.0 · 2026-03-17 UTC</span>
+      <span class="release-notes-toggle" id="release-notes-toggle">Release Notes»</span>
+    </div>
+    <div class="release-notes-panel" id="release-notes-panel">
+      <h4>Release Notes</h4>
+      
+      <div class="release-entry">
+        <span class="release-version">v9.3.0</span><span class="release-date">2026-03-17</span>
+        <ul class="release-changes">
+          <li>Updated Spectrum Reach logo (white monochrome with alpha transparency)</li>
+          <li>Cap warning now only displays when cap data is loaded but specific DMA+HPO combo is missing</li>
+          <li>Removed persistent cap warnings when no cap data exists</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v9.2.0</span><span class="release-date">2026-03-13</span>
+        <ul class="release-changes">
+          <li>Added Spectrum Reach logo to header</li>
+          <li>Breathing neon glow animation with procedural flicker on section borders</li>
+          <li>Rate Class redesigned as toggle buttons: Standard, Political, Special</li>
+          <li>Special rate class expands dropdown for Hold Co. + Horizon, Canvas</li>
+          <li>DMA Market now uses dropdown selector with arrow (matches HPO style)</li>
+          <li>Fixed release notes container padding/margin</li>
+          <li>Removed cluttered subtitle text from header</li>
+          <li>Shortened HPO placeholder to "Select HPO..."</li>
+          <li>Updated file naming convention to include version</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v9.1.1</span><span class="release-date">2026-03-13</span>
+        <ul class="release-changes">
+          <li>Input fields show faded placeholder text, bright white on selection</li>
+          <li>Updated "HPO" label to "HPO + Season"</li>
+          <li>Changed DMA placeholder from "Search DMA..." to "Select DMA..."</li>
+          <li>Adopted SemVer versioning format (MAJOR.MINOR.PATCH)</li>
+          <li>Added expandable Release Notes panel</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v9.1.0</span><span class="release-date">2026-03-12</span>
+        <ul class="release-changes">
+          <li>Refined visual design system with enhanced glow effects</li>
+          <li>Improved responsive layout for mobile devices</li>
+          <li>Added UTC timestamp to version display</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v9.0.0</span><span class="release-date">2026-03-11</span>
+        <ul class="release-changes">
+          <li>Major visual overhaul: dark navy + teal/green glow design system</li>
+          <li>Improved package cards with gradient headers</li>
+          <li>Enhanced form controls with unified styling</li>
+          <li>Added step indicators for workflow clarity</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v8.0.0</span><span class="release-date">2026-03</span>
+        <ul class="release-changes">
+          <li>Embedded template support for offline generation</li>
+          <li>SharePoint REST API integration</li>
+          <li>Admin configuration panel with password protection</li>
+        </ul>
+      </div>
+      
+      <div class="release-entry">
+        <span class="release-version">v7.0.0</span><span class="release-date">2026-02</span>
+        <ul class="release-changes">
+          <li>Three support package options: Addressable, Custom Nets, Audience</li>
+          <li>eCPM calculations per package</li>
+          <li>Live impression cap validation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="header-right">
+    <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAdYAAACcCAYAAADCrorkAAAAIGNIUk0AAHomAACAhAAA+gAAAIDoAAB1MAAA6mAAADqYAAAXcJy6UTwAAAAGYktHRAD/AP8A/6C9p5MAAAAHdElNRQfqAxEWBjHLIaAQAAAuIklEQVR42u2dd5gdVd3HP3c3m142nUAIJSFBAoTeW1CQTkCQLiggKKBYUF/1fX31VbErSBMUkSZFQKRIlWISqlKCoYQSIAFCCAmpsMnuvH985z67e3Pv3JkzZ+6d3f19nmcews6dmXOmnN85v1oIggDDMAzDMPzQUO8GGIZhGEZ3wgSrYRiGYXjEBKthGIZheMQEq2EYhmF4xASrYRiGYXjEBKthGIZheMQEq2EYhmF4xASrYRiGYXjEBKthGIZheMQEq2EYhmF4xASrYRiGYXjEBKthGIZheMQEq2EYhmF4xASrYRiGYXikVw2uMQgYCQwHNgUmAOsDY4AhwMBwfwAUgDZgCbAUWAC8DcwFngNeAxaFfzcMwzCM3FHIqB7rZGBnYEtgK2AzJFjTEgAvAE+F2wzgkVrcKMMwDMOIg0/BOgg4GDgCmAJsXIP2vwM8C/wl3BbX4JqGUWsmA6cDH1bYXwA+oH2yad+BYdQRH4J1GHA48EVgc6CpDv1oRariC4EbkSrZMLoL04BbYvxuFfAqcC5wTb0bbRg9lbTOS/ugleJlwNbUR6gCNKJV8qXADcBudWqHYWRB3NlvP7S6vRw4q96NNoyeiqtg7Q18GwnVqfXuRAn7ADcDZ9a7IYbhiaRqpd7AT4C96t1ww+iJuAjWQcBFwI+AwfXuQAVGAucBP6R+q2jDqCf9gVOojee/YRgdSCpYBwMXACfXu+Ex+/Yd4LtIVWwYPY2pwKR6N8IwehpJBGsD8APgM/VudEK+AZxY70YYRh1YF8WLG4ZRQ5II1hPomg4RfYGfo7haw+hpjKh3AwyjpxFXsE4Evpfg93ljGHLmyKtN2DCywnwMDKPGxBWUZwIb1buxKdkD+EK9G2EYNSaT1GqGYVQmjsfg5sCxnq63AuX+fRqYA8wP/wYaABqB0cgutDlyvBgO9PF0/c+iONfXPJ3PMAzDMDoRR7CeQPo8v+8CtwPXATNRhpi2Ksc0Ac0oFu8Q5OG4Xsp2TAI+Bfwi5XkMwzAMoyzVVMFDgb1TXuNBJMxOBu5FK9RqQhVgNbAQpSg8AaVNvIr0qq0jMYcOwzAMIyOqCdbtkOOSK3chQTbdQ1sfR6rcs4GVKc6zHUp/aBiGYRjeqSZYt8Tdk/Y14MvAex7b2wqcD3yFypU+4vQ57SrcF4V6N8AwjG5DXsaTQo7aUheq2VgnpDj3ZcBLGbX7UmAT4OuOx38c+F+kbs6ajYBxyClrFFKvD0SpIfuh1fdyVPZrATAPVSiZU4O2paV32L+xSL0+FNnGByCV/XJ0j5eiCdZbwJvAsno3PCajgfXRcxuGnls/lC5wGdCCnt9C9NxeD/uaJ1rr3QDDKxugkpzrom9uGPJFGYgWDcvRO7kUlQ9cgL6711CZTV8MQD4rG4ZtGYnGtGbahepy9I0sQ+Pb+2Ebiu1ZXu+bmRVRgrU3GjBdWIYS9GfJr4B90ao6KRPQoDnPc5t6oRdtL2CnDtcZgV64OM5iS2kXsP9G6vSZpFN/+6KAHMg+jpzJiv0bjjQblVJHtoX9eh8J2LnAY8B9qHB9S707FjIU2AWFZm2JvNNHAEPQwFWJZcAiJGDfAB4F7g77VovJWxT90SBYiTak/ckqLKcJvff90LsyGAmDBjTG9Af+Gd63IpPRxDnJvSuEfXgCOUtmxUD0jY9B0Qql960oVGahiVZahgK7o+9ti/C664T3MA4t6Lt7F0VkPA/cg8aUDxK0owkJ0r2BHYHxaCwYSbKojeI4sABNsp9Gz/9p8jcpdSaqHmszGtR3dDjvI8B+ZH+j/hv4PsnVDiuBQ9HA7oMJSJgeAWyPBmJf+YlXoBXstagm54uezpuE/ihz1QnAJ5Gw8ZHcfQnwH1Q79O6wn7WmL3pmRwIHoUGrn6e+/Rs9t7tQaJkrhwC3pmhHlNlkDkpTOtdDnwtoRbU+EgJboG9jLBIQvdF30dTh92uAzyEnxSK/RPWdkwr7NuQoebeHvpQyEsXBH4s0GL2JNqV9Bfid47X6ANsCn0bPfgx6T32xCk1kbgL+jGpZV2ID9M0fiyabzfhX8y5Hq9h70Xv+FH5NiDUnanBsInqWHsVL6OFlzf3Al0ju5dsXzTrTMgU4JtzGZdTHAWiAOhellLwK1dvMSs1eyj7AaajYtu9iBs3AruH2GvCncJtbo77tD5yEBuMs+rZ3uD0N/B4J2cU16lvHdkSxkvSTpI2BPdFqf0+02ozLmjLX74u7IMmi4MbGwB+RJiMuvR2vtQdwOvrefEzwytEPrT6/DXwejSeX0Dm+fxjKsX4a2RdyGIicZCcCZ6AV7E3h5lurWBMaquxzTWHYSryQmrTMws1e10C6mNhmVDXnr8A3yU6olrJueL2/oRcwy6o9o4FfI5V+FoKnlI2Q3ft2si+aMB4Jur+gVUHWfdsKVYW6HWly8sRHuKuBd0YlJG9Dg/MpJBOqIMFaOla42oXbUvSlEkOA35BMqBbbkoShKO3qzWiinpVQLWUEKlRyG/oWAHYL2/Er6lMdaXd0z29HUSD969CGVETNVAPcheMUNAtJosN3YRlSjTaR7IMq4P7xbg/8jPoWkZ6EvKN3Q4L2jXSnW4sd0Ee1ax36Nhk5vu2MVP0LPZ//QPT8NqtD33ZBKs+fhm3Ii205KdsBX0WThKH1bkzGHAAcnPE1tkST2HpGKxS/u6LKNw8pbKeE9+VgNOn+Z70bFJesBOvWyNj+1xr04TQ0u0vS1gJuKrnD0Uxq/Rr0qxoNwNFo9XU6suf5YCrwB+r7YTXRroL6PP48pD+Hsm7VUxgMBP4P2a6+TvaTT5+MRuaIM6iuYu4O9Cb72tO7IYG2ab07ixzLDq13I8qwN5Ip30ean9x7ukcJ1qKbtAsNwI+QHXB2xn3wvVqrxDFI7dVco+vFZXu0CjoOeaOmYW/gStKnjvTFXsjOcgxyckrDKWhSNCDleXxxCrIjnoUcjPLOLmiVXQ8tRr0Yh76vrNgOOe7VypTUlRmKtGjjkBmuFj48zkTZUFeQLu5pMzRId4c6qAcDF5I/oVpkY+AK3EKPimwfniMvQrXIFsixYp0U5zgceZrmRagWOR4JKx8e1llyKJq89SShClpFZmXr3ADZ+U2oxqcBmSD+m5wnoIgSrGtIH4e1LVIH/xdd9wWaiAa/vNuSJqEVWbPDsaPRxCEPKu5y7Ab8ADcno8nIppnXWrynIjt5XpmGVJXr1rshdSArodoH+DGWWtWVc9CkNLdU8/r1ETM5Cr1Et6LBcZt6dzoBvYEfkg/7RxymovCjJDSiIvZZqrx8cCJSCSehPzJJpMkgVgu+g5yq8sY+SKiOrHdD6kRWSTOORDHvhhu9UJzw6A5/c41gyYRqjfk3/rKYbIWW8LcDf0d5hLcgm4BjXxyOPoKuxFeQoT8u+5K9g4YPeqOZ6gYJjjmSfDpjlNIPOTSNqndDOjARaTGsEpRf1kF2ddc413KsRvHIK6mvp3kxi9cKZANdk+G11kUmsCJDUdhQGnOYN6rZdp4BngU+4fGaY8JtPxRD9xwwA2VrehF5gOYhh+QAFEOVBSvRS9cf//a1ZuRtejzVZ9yD0Mvo6yNfhNKmLUYfexN64ceQvqYv6KM5HmlAqvWtGfiap35Be0q4ZWHfeqMYx3XwI3y2Rpl9vu+xza40oXucNCbVqM4nUDhbWhag9I1PIyfRYqaiIWjyuQVazEzOuD8twL/CdjyH/HJWoO9jJDJRFdsyxuN1AzovyFpRlMSpyGv9noz7HUm1Qb0FrTA/TjarymLqrm2RCvNd9JCeQWmtHkH5JOvBp/Cntl4D/APl53wDxWa2IME2Aqkqd8ctfWQ5piEvzhlVfncAfuJx70dJK55BaQkXhP1rQuqa8egZH4M8IdNwOspg9FqV3x2Hn0HlPtrTrL2KJg8tyKN3BJo1b4FSz+2b8lqfC/tW7wIMJyFtjeGXvih9ZBraUDKOP6LxJIoN0FhwFvoGffMg8FuUQnJFld/uhCbFp+JnIh/QeXIdoFXy1sB1wM9RDKxrFbSUrQuCatvIIAheCmrPh0EQvBAEwW1BEJwTBMH2QRAMDoKgEKPNabfeQRDc4qkftwRBMDUIguYq1xwTBMHBQRA84Om6f6hyvcYgCP6R8hrzgiA4LQiCYTHv67pBEHwnCIIVKa/7zSrXGejhPi4IguCMBH0bGgTBsYHe2TR8r8y5D0l5zihmB0EwvsO1xgZB8GyG1ytlVRAER5X093zHc7UGQbB/kP77L25HBEHQ4tiWM8qcb6uwv64sDYLg1CD5GLhlEAQPpbhuOS4JgmCEwz09PgiC9zxc/60gCHbucN4hQRBML/nNtUEQbODQxtRbHIPvQmRrqTV9kBrhIOSV+xCK0/wtcBRaJbjmMq7GFOSJmoYVyBv6KOABqscqvo3Sih2C8gKnrYoyleh0ZFNJ57A0B9kwf4eqVcThLeRMdDrpCjQcS7TH5i6kWxnPRyveCxP0bTFabR4BPJ7i2ifQ2SkjawbQ2dfiOPRt1Yq+tCfl7+7sg3sO5DXIR+UykjtVPYvUo74KeFyHNIwuifKvRiaaWlR9OgZFpexTg2t1Iq597wrgMJRgu170Az4Wbmcggf8Y8CRysppB/EGwGjuSzm62CvgWyhKSlGUoOfYq4H9wt8FuhBI+VPqYDsJ9YrIAeek+4nj8VchR5yeO/ZsY9u2OCvv3TNG3pcjW6Vr56DmULepvuIWYjUfq+esdr1/Kk2hCU054NaKCB0WfhjH4D2OYH15jIZpsdjQpFZBa/WXP18wrSfMNd+RWVIfaleeQ3fxSkpV5K+VNND6lcZK6FplNjk1xjrhshb6lH6E0sDUp4xh3UPsACYq/kJ8EAiORcDgIOQO9gOyzf0OrW9esUX1JHwh/FcrSlIZzUQWez6U4x27IHvNRyd9HIpuHK7/AXagWuRB9XC52yb6olFU5wTqcdHbjC5DmIA3PoCwxv3E8/jjgBvyEe/wY2cDKxQA3oJVQMYvNVGBzD9dchDJm3Qm8gnwnlqL3sJyvRlZhLXmiGU0IXViKkkmkzTZUXGlum+Icl1Pdv6Eaq9HK9TBqU2xgKBqztkJZm3zUyY0kyWrhUeRB+juyU8G60h85Gm2DVGlz0Cr7rySv8TmcdE5Ec1G8btrqPmtQ4um96OxWnoSdkVt66YewBVr5uzCLdDPnIh+G59kLN2eGrZHzV+kEahzJwo068hIyNfjgZuQBOo7kgiMI78lHCY8rx1I08axGI/KqTEMbStH3U1RQu9w30BOEaDkmII9dF2bjJwF9C6oN7CpYP6KyligpT4f9SiPkk3I8ygj4DeRwmRlJ1XDXog/wfPKb3q8vEhy/RCq9y9BsL66aeD3S1Wq9iHRFrTvyJkrn9zPH4zdCQrlUsG6Oeyaiq/BXwP5OpKp2seltgj6Sx8r0zXUWfDXp0nh25E3kWd6b5AUiwF88YtxvfD3SaWraUCyuj0lld2Qj3L+5Z6nudRuXNPnEn8VflMbbaAFUS8EKWnzdgN7VC8go1tYlW8VVSPKnTYpeCyag2fNNxM9ZvBnuoUVvA7d47sP14XldKRVajbiXTFuNu+2xHKuQY5cLoyjvnOUaIvW+576BhONy2oP342wrwq3WK7tdcF9RgTRZJlQrMwa3CV+AP6cjkD3b9RnNxW/BiEUez5WEYSgU5zIySuPqmgbqDpSC7bf4m+FnyV4oiXicNGJp0hfej/9qO/PRys6Vzen8nIek6ONs5AjjE1cP2gJrx+b1wj129Vmyr8SUZ3bGveD7c2gCa0K1Mq4JUtrwK8w+xH3S9gF+40J9ab5cOQmZbLzXwU2TX/F1ZAg/EDlq5H1QWg+pVasJ1yQp80qZjv+UYq0ouYQrm9DZhjkE91qrz+N/ljkL9w99PJ29Xfvgnhd4Nl2rNqpv0jgt3UgNHEK6OHmprJSnnLp5mIhth1TDZ+IxC56PE/073C5G2YMOQHFDadRKWTEc2UDfBR6u8BvXKh6LkWdyFsxBqsphDseOQ8KnONMcmKKPy9FzDfDzgbYgob8CN4e49ZHdqijsh+Fm+/etbutqjMC9LN97yOvYiGZQvRuQQ/KSI3440r5ui0IcU9uRfeapfTncrkOD+Z7A/sjmNQJ57uaBkcj5an/Wtl024j7AzEM2iCyYj8IWXARrM529Z0fh/tyPoF1t4uOjaEOC1dXZaAydBet6jn1bSXbPritQnKC48DoKczOi6ane0F2Jk1C0xDmk9MLOosDyKjT7fxGFU4xGjhE7IaeZDcKtnvUxpyCX66+U/H0Q7plRFpLOyajauefhlimpF5pMFG2jaZLhN5Mvb/BhdBbKo3EL3VlB1/AVyIpRuIfQvUy2VUwMo5bsiOyu30MOea0uJ8lCsJayAHnKFr1lN0QhIOORE80U5Lla65JZJ6CYuyc7/K0f7irOJWRXsmk1Eq4uNNBZLZ/Xgt8uNNNZsA7GzQHnQ/w6iHQ1huNuA6xXkQzDyIoRKBRnKyRgEy+YaiFYS5kbbkWHnKFoRbU+WpHtgYTtMNxXj3EYjnJJ/ot2NU0adY1L3swkuHrQNdJ50OxOgrWRzivU0ry3cVmNe6au7sAA3PP1+qrXbBh5ooAq8WyOtJvTkxycBw+xxSjjzf0od+xByIj8GeTF+yTZ5Xc8kHRewB1Jm26sGq4Df4HO9u08PHOfNJf821WwxslO1F1JM9mqZ2Ftw8ianZHX+2kk0IblcZBtQ/auG1HmpP1QqjWfGY2KTELLfR/UOyYrLt3NicJXZZTudl+SkOYe5sWz0zCyYh0kfy4gZuWpPArWUhYhY/IZKPfqd/GbhCFN6bSOOBm5a0Shwr+7Az4EYhP5y39dS3rypMIw4tCAyl3eSIwsfl1BsHbkBVT+Zw8UMuMjf+YU/Nhy8xIAXkpAZzW1qe7Wpon8Pj/DMPLD7mihdyoRi5SuJliLvA58GdUETZtib2P8CNasnYJcB/5WOqupu1t2oY52D9eVV2969orVMIz4rINCcX6LHG/Xoh5ewT65Ca1aryCm7rsMY3CLfSwl60xTLskhQDbrjoI1jS34FVTvdiXueWV9UQi3jhmTloT9TTph7I/7+2MYRs+jgMyTU4D/osRrOEqwxq0GU8oS5OVbK5vjXaiY869xW4E34cfuOAIJmyz63Rv3ON9WOocCpQmPeAXViM2ro9Z7KFlB0onSADKqcmEYRrdmN5RnOLZgnel4oadRGIvvKihR3Ah8FjcPX1+OG6NQDt4sAubXwX3gX0LnUJ3FqGBxH8d29Ce/gnUB7fmHk9CIezF5wzB6JmuAC4Eflu6IWuG52uLWxz3Juytv0zmDUhJ8ecmuT3aD81jWLpEWl9fp7LC0AqVHdGEj8llcochraNLgwibUX71tiO7gud4d+mBUZj7weeBsyiQHihKsrzpecDjlC1BnzWLH43yVLhpKutJbUWyGu3PUHDoL1iVIALkwCH8JNbJgEe6xzpNz3reehOs3GeA+sfLdDsuf3H15CDgM+GOlH0QJ1jkpLvxJaj/7d3XuWYS/zE5TcVOxRtEEfDzF8f+h8wCxFNVVdWU3z/3zSQsqWO7CBOSIYNQfV21ZAT+OiEVcc4e3pOiDkV/WoCQRRwJPRP0w6qV5KkUDDkYJ9mvFQFQyzIW38SdY90WrS59MQjVuXZlV8v8BErau7E9+vcnbcDcJ9EK+AXnpW09WJb7veFwD7uNAOSbitkD4iPz6IRhuzENpDb9EjIIoUYPIIyka0YxKsp1So05vCGzpeOyrtBcBT8sg5ESVZlJSyvG4q4HnUl6l/x/cC6dPRhmw7vLYR4DDw74GVHcoK6DVxG+Ae0r2PYY8oV0GxCNQ4hHXVW85voaCyltj9AskHFqBP+D/HncV5uPuYLcjunc+2M7xuGW4+zEY+WM6qtH6aNwDogTrKyhnr2vh72OAB4Gra9Dxg3F3mHoav0n+P4tK5D3g4VxbAyenOP4xyntnPwfMxk2t2w/Fbz2Ev8IDA1DCjz0SHPMREqylvIIqFu3g0I4hwNdRAQgfTAK+TfIJzKoKfespzEUOIS6rz13Rc0yrit0c9zziH+Dux2Dkh1aUCOL7JAxTjFIFLyBhqZwS+gO/BA7JuPM7Al9NcfysFMeWYyDwM2BcyvMMQ9V+RqQ4x0zKr8aXkGD2VYZ90ATCF58Ddkl4zJOU16q8hyoluXK0x759DTetwFPA457a0BWZjUMNzJAJ6Bmm5TO4T9Zfx1TBXZ13UBGYM3GI/Y8SrKvRqiQNo4CrgO+QTcq/HYDLcBc+L4Sbb7ZDKsWxjsf3QYkY9k3RhvlIY1CJv+H+8fdBOZunpWhfkWloRpjUtnkv5UvpBcDduBcub0ITowNT9utk4CTHY68nu1KJXYEVuPsB9EZ2sDSRCXujXLCupJm0GvVnOjJNXYZjnoNqHm93I7VMGgajANrbkQ3LNYNQR9YDvgj8BdgixXkewG+lnI4cCtwA7JXwuI2BS4GzUl7/EaJthdNxd/QB2dH/gLQFLrGtg9Az/D0KVUrCu8B1EfsfJZ2PwAjgT0jl3S/hsUNRYeTzcCvH9iZK1dnTuRP3LGabAb/CTZW8A5oUNzteu4W17f5G16ANCdNPkW78qCpY5yCB6IPdUYakm9AK5SCSvfijkUfqD5AN80LSpaFbDtxBtiWzdg7behFSn0atyjZGwca3kt7Gtxq4sspvAuDilNcZhtT9NyAhOZnq3qwT0WrgBvQMhztc9yY65wgu5SOkKUmz6huOXOuvB06guq/Bx8J7cCPwU9yLJlxKbbOW5ZV/kC6L2QHoPYmreeiL3svr0HvsyjP4Ny8Z2fMOmkifTrq0r0A89dvFyGaRxtbXkd3CbTlSVy5CH9CbKLn7B2hAHIoGp3WRvXIkEsS+VMozkToxa5qRrv4YNFF5ETnYLEJqq/VQaNJE3LMrlTKdeB6ld6FV+9SU19s33N5AtrF3kK1zJRJyg5AQHosE1EYprvU+EnjVuAnZbj+Rsm8Ho0F6Dnpf59Fut24M+7Ve2K+0CSZeAK7B6qOC3p/rgW+mOMeOwJ+BfyLt20w0zrTQ7lk+ETnNfRLYifRhTtfgp5ylUTseQ/4QM3ydMI5gnY1UIz/w3JmB1CdDE+jDOp/a1iZtRkXVfRVWr8QaVJAgzmptObIn7kRylWc5xpHeaasa56N3shotyPlrVw99a0STnyxjs1uR+rKcN2lPjWm9EoXsuWg1igxCE6MDkLf1amR/7xXu642/pC6vII2T0TVoBS5H/ixetURxs4pcQDoP4bxxNbLhdEduJNlK/D4iUnPljBkkU18/gNTwXYGbkF23HLWqFJU3ngcu8Xi+fkjjNQ5pwgbhN1PaZaT3STFqw0Lk5HYaGZhe4grWxWip/Hq974YHnkGr7+6obpuLVmlJEl6sQTbvvId3vI2CtJPYP9qAc8n/pHA2qulYSYOygp4pXANUTNpnwpWseJj0PgtGbXgcOdJeREZyIEkezMeRcO3K8VmL6D4ThFICVJfWJWvQu8jxJq/35UMkVF089RYhpzDXohJZ8y5ymohq3yJkt+6JLEBe1q5FNmrBu8gW3JXHxnrgkoc5DW1I9XsYmgjlpmM3IUecRTW+IT5YErY9TfKAPHMeUkW58i8Ue5lFPdk0rETZkK5J2bfTyV+auQUoGcWDVX73BvBSvRtbR+5DGaxq6RMRl1Xo/bTY1eT4SiUbh4Uou9up1MDr3mXGcC1wIvByDW9KWuajgfXGejckI65FSTjScj8SrnlZuRZXcxd6ONe9yEs4L6nmXg/bE8fWvwQbuC9B73iehOsq4FsotMtIzkvUJhHKE6gizQX4KxMaietS/A4URFuLcJW0zACOQq77WVFPe+2fUdqtlZ7Ody9Khv90HfsESl5xDHCFx3Pei96FVMHfHngk7FsSB7qb8RBf18X5BSou7Zru0Cfzkcfy+fVuSBfmIbJL0AMal/+EVL9pswgmIo2O+1ng08hVeUEtGx2Tt5GT0jQ8xidVIECrvX/WsH9Fx47T8W9/mo5exiuo0QyvAyvRzPIwlCTAN0+gdGXnUft4wxVoIHbJ7PIk5hwD7QNlPSv/3InGlWvrfTO6OG/hRxtVjkWowtrJaBJUU9Iaj5cgj9JDUGq6PBjvP0CD1yHA91CgedY0oDRmn0az6qwdLd5AbuJnk909n4teyuOozQovAG5Dg+ZZZGsPfQfdu8Pwl1msWt+KWp4v477i+hnJS6LFiYFNEydbjxjbx9C39gVqm+XoKfTdHUW6dKBGOxejSa4PinkZnkRJjc6jTt70voo6P44cRH6L1IgHoVgx17RuSVmKBMEtKFVenAQCvumPBuxzkHr2LGA/3MvulWMxCkD/eY362IZSvN2DAuxPQbmZXSq2lCNAQuZhFEs7g9quIu9F2Xj2RE5EuwJjPJ7/HTQp+X3Yx+Upz7cSeW8/Ef53HIrFdKk92xGXnMZF6lUYfhmyu96MUp1+Br2bIz1f511UZvEKtEquWuS6Av0dj2vEb6xtA+7vi2sfovgQOX/NQZPOjYj3Tg0p+V0vNF7dgsbemq9SO1IIgkzMg4NR8vk90Ms+HqV78/URrqLdU/I5pDKcSXo74zpo0HKpSvN9pBbvyKZoVVS8Dy5JwUGB8tORk0Qt1c2lNKAsTQcCU1CJrnEky2y0ADkQvYwccu4mP45wk9AEYif0zm5Isqw/S9AE7xW0qrqD7CZAA4FtgU3QRKeJzrb+Qvi3K6kearQ3Uo+vIb7qvyG83i1kHLoQkwKqn7ovqmO8EfreRhF/4rAaCdJ56B39F5p8PeOhfV9AE+2kA24bire8z9N9Go1WiUm1lQU0wc5KdVts2/4oFeUIlBWr3P0qoNSmP6E9Z3gzKj05nRxoTrMSrB3pgz7+4os+NtxGoHzAg9FMqHRQCNAMf2l4ExeiF76Yr/U1ohOxu+BbsBbphT72SSg36URUQGAUeiGKL1ABrdgWoonDs2ji8CSa0eWJQtifDVEWmxFhf/qhVVQBTYCWo5X2wnCbjwSP68y/VqyLCiOshz74EWG/BqPn1YrezWXI3FB8P18lW4cMIx6j0Te2Dnovh6DJyCDaBW0Len7L0aToPaRleANzFDNSUAvBWo5eaADugwapSivZ1ejl/xAN0lk70mQlWEvpiz7y4j3oqJpZHfa1+MF3RZqQYE2yAuoqNIZbW9g/wzCMTtTLPrIGCY5laU/URfmQ2gZH15ruXKS7lZ6ZXtAwjJjUOqWUYRiGYXRrTLAahmEYhkdMsBqGYRiGR0ywGoZhGIZHTLAahmEYhkdMsBqGYRiGR0ywGoZhGIZHTLAahmEYhkdMsBqGYRiGR0ywGoZhGIZHTLD6ox51KQ3DMIycYYLVH905969hGIYRExOsfliFajcahmEYPRwTrH6YhQrsGoZhGD2cepWN6060oUr2K+vdEMNwpFgfuQCkKdAcoJKBraSvVdsX1WrOumB0AZlxWjycqxcwgOgaxCuoTY3iQcAwYONwG4ru5xpgESrk/iqwMPz/NKUQ+6DnVdqvQvi3lY59rvQOFML2lqvRPQX4LLAJWjiuRouePwELsrjR5TDBujZJnJBWA98D/lrvRhtGCnYCvgX0x32ALRa2X4LqLL8JzAFeBP7tcL4vA/uH58xKuBbC7XLgGg/n+iJwJOX9LYpC5o/AnzPqD8AWwL7AfsB2wGDKayYD9KxfBR4E7gVmAm85XPOzwLHARyV/b0RC+5vhdZJyFnoH2uj8DvQCXge+C8zr8PdTw789hMbkxUjAHgocD5wGPOL5fpfFBGtnCmiGFIdngV8AV5P9rNowsmQMGsCyMA0tAP4BXAI8nOC4bYA9a9T/f3o4x1jgC8CmVX4XADfhZ4XckXHAGcDR4b+rUUDj/8Rw+zzwBHAlmmgk0cBNBnavsG8p8GPHPm0NTK2wbx7SFBY5GvgRcDHwFO3al78BFwE/D/t2GPCcY3tiY4K1M6uAG4GRlJ+5B8DbwOPADDrPlgyjq9KKVln9Mzj3aOAYYB80EP4y5nG+BU8UadXWoNXhpBi/mxJuT3hs/wHo3m6R8jzbh9sBaJU5K+ZxqyP2fYi76jvqHfiQ9gXNesD/IuF5F1p5t6DJQSMSqN9AmoJvAiemaFMsTLB2ZglSP0TZmmphHzGM7sYIpOHpDZxb78Z4pgGpG+OYkUYDe+NPsJ6G7udQj/3ZH9gIqXgf9XjerNgJjcuXocnNQOBXwK+RffVs4Hw0+fgdMAF4KcsGmVfw2rShGXxbhc0wDHf+Bzik3o3wzLpIGMVlX2T7TMvJwG/wK1SLbApcBWyZwbl9UVz8TABmo4VRn/Bvk4FpaLLzMLL7z0Wr2LFZN8wEq2EYtaQvcvgbUe+GdKBPyuP3B0Yl+P1uwOYprzkVrcD6xvx9C1Kffkh81fcE4ELy9azKEbC2tmBX4KfI3vwAEqy9wt9m7hNjqmDDMKrxOPInqKTqDIAmtHJaF4V3RLENcBQatF1YDTzN2l6orryc4tgG4PCEx/RGwnim4zVHIqERR+DNAO4BnkTCpSE8fiekkt66yvG7AWciG2beKL6PLwMnofev6JF9FXABcDPyWL4I2BCFQ72ZdcNMsBqGUY1ziR9StgkSmucQre7cH3mfrnJozyLkYPNevW8MckTaxuG4acDPkLBLyqnIySiK+cAPUXhPuQnIX4Bm4BQUajU84lxfQI4/L/q7bV6ZjgTqKcD94d+WIvXww8gTeGPgS2ii8VrWDTJVsGEY1WhK8Ns5aED/YZXfTUIrCBcKxFeBZs3+aAVYjiiV46bAzg7X2xA4vcpv3gJOQCFOUav6Jcih7GwkiCoxCgnzvPIuWsF/BTgYOJB2bciPkYPXf6NJ37mkS4YRC1uxGoZRDZfKTZej2MgJFfaPQgLp+Rq2yTeDkTq1UltuBHag/ASiF0omcU/Cax4MrB+xvwWFljyQ4JxXAzsilW8l9kKq5zxoCcpxPVqBfxnYCsUmt6B3bC8UdnMi6dT+sbEVq2EYWfAB8FjE/l50/Yn9VlRWya5BAuvWiON3B9ZJcL0m4NNVfnMzUvMm5dcovWElNkFq7zzzO2Tvfg49l72A8eH9OAi/scORdPUX2zCMfLIGqegqURPvzIzZm8p25NloYtGKVlHl2BilHrwi5vUmEh3+shTlxHVx6noVuBul/ivHYBTbmndeQGrfumKC1TCMLGhAif0rsQh4v96NTMFQor2BZ6KJxTPIC7Wc+rYJCecriRcjvyvyaq3ELNKlZzwPeIXyNsi+wH8cz+ua2arL5g0wwWoYRhb0BbaN2P8K7t6ZbUjVXE+2o3IKwY9ot3G+C9yHshiVYypSs8bxuN0K2Qor8QSqnuPKk+HmkwKaDDQRX94U41Lj5m3PHSZYDcOohsvK4RCiYyRnEO2JGsVg5AX6Ae5OTH2Q49RVuJV8PDpi32tImIJibh+ksmAdi1aicQTr+Ih9q3GrIpQ1Q1B2qCUkF6yT6914V0ywGoZRjeIqqZoQ64MG0gNRmEOl8eUd5MXpygCqh5zE4QlUaSapYB2FVLiVmEFnNffjyIZZKXHGNFS2Lso22o/o1IUrkRYgb/TGLayoS2OC1TCMapyEMvVEqSELSOBsQ+UQmyKXUIPSXTHoWCElCQcRnW+21BN4DlKxVhKsU5Fj0AsR5xxGdPWhFjRhMXKACVbDMKqxX7j54A/ELx2XNS5CtTG8F5XGzjfQCrUjraj49uEVjhuIVOdRgnUg0TmNW8hvjGmPw+JYDcPImjVo1XYOKsu4vN4NSsHH0Oq9En+nfJjRfajoeyUOpbpGIEoV34ZbekgjA0ywGoaRNUtRAoJfkK/Bvw/JnZ/2pHLmowAV2i63En6JaPX3ZOTEVIlqgrWrxwR3K0wVbBhG1gxDXrzjgf8jfahMK3IGasHdK7gJeeImibHsT3Td1ReApyL23wp8ssK+IaiwwMMV9rdUaWsv5NS1xPF+ZMVK5CA2j/jl+drQou+TdFHPYBOshmHUgkHA15BwOhsJClcWI4eqt3AXrI0o5jNJyM8k4OMR++8EXo/YfysqTjCswv49UW7bcqkFl9FeEq0cTSiX7xLH+5EVy4Af4VYZZwgmWA3D6Kbcg5KXR9VjHYk8WzcnuvLM6cBtyBbpyhqkWq21s84BEX1rQ7bVSVQ2sfVFAqZS+MnWKKnGXWX2LSY6+UMflHe4JknmE5Am0UOj43F1xwSrYRjVuJh49Vh7I+/Wn1A5mUEBlTRLI1gLRKdLzII+wKci9gfA11HNz4YK+0Er96hrfAK4l7XTCq4mOkl+f2AzVJs0b7j68uShgpETJlgNw6hG3HqsLaiSyGBUD7PS6m4KsgemSb9Xa3ZFNVQr0UjluqxJOBQ5eZWLSX0eTVzK0Qt5K1+a4trTgJMr7CsgB7T7Y5+tB2OC1TCMaiRdOdwGfJvKq9bBwDjca7HWg8OozSp5AqqNWq7c3ONo5VpporMDMAZ42/HapyJ1dzkC4IIa9L9bYOE2hmH4ZiHRg3sfotPz5Y2RqHZqrTiqwt9nEm1XnkTlFW01NiM69eDTrJ34wqiACVbDMLLgrYh9vYm2NeaNvVFiiFpRKVb2Hdqr5pSjF6r9uqHDNc8kerLzL7p2mb+aYoLVMIwsiAoNKZDeDOVa4zMpDUiwRnm2toXtaY25VWv7OsDBFfZdRXS1oY8hW+hg4jMNOC5i/0coFtWIidlYDcPIgmqT9jSZggpoxfs+fkIyAmS7LCfwNqByUgdQ3Op5KBwmblvakC3ziAr7G4B9gcvCdnVkJgp/isrdPA34E7JzV7NjT6O6IH6E9jJ4RgxMsBqGkQVZhko0A79HXsU+BGsrcD7lQ4B2QcK1EnciwZSUZ9GqtFI2oh1QIfXSGqtLkcf1rkSr06chu+nVwB3ALNqFdDPyID4COJJooboaZc2qlYagW2CC1TCMLGiN2BeQbsXaG//ORLeV+VsjlVeVoJXnw7jxPPAfVGavHGOQrbVc8fK/A5cje2oUE4EfAGegFfUi5Nk8GJX4i6MuvhS427GPPRazsRqGkQWLI/Y1kq9JfSvlUyyOR7VSK/EiKmruwkq02o1iP8oLv1aUczmuenY0isHdlfZ6uXGE6kOoYL0l+E+ICVbDMLIgKtF+P7RiyjvTUL7aSjwGvJni/Peytg21I7ujEJpyLEJxpzMz6vuTwGlEe3cbFTDBahhGFkTlrG1Etss80wAcGLG/hfQOPS+i+NBK9CO6ms5cFPN6o+e+/wM4BrfE+QYmWA3DkFq2f5X9SZlVZf+JwBepnEUobokxH5RTTX+C6ILmi5EASsMC4MEqvzmeaLXtvPA3XyV9Av6FwC+RsE5yrqhQpP64y5modyDNeTMnT3YOwzDqwwK0+upHeXvaO8lOB8ArwJ+RR225uMsmlDO4L+XVobOAsUQ7QfmggDxe55X8fV3gGRTDWe6Yh3FPHdiRO4HtkHAqvfcFFA88FpgdcY4W5Jl8F3A0WuVun6AN88J2XIObM9YLwKOs7TlcQCFRyxzvzSyU+rL0/WlEYU65zTVdCAKzSxtGD6cXEqqVQmRWEW0LrEQfJDjLDTJFgbaywv5+lBc2WRAgAdaxjwOQ8K+UjGElfkJQCmj1FRU21EJ0wo1ShqISfruisJ0NUNKJwWii8j6yDT+DBOlzpLMV9w23cveqLbxXbYnO2H7ePpSfcLSmOG/mmGA1DMMwDI/kVkdtGIZhGF0RE6yGYRiG4RETrIZhGIbhEROshmEYhuERE6yGYRiG4RETrIZhGIbhEROshmEYhuERE6yGYRiG4RETrIZhGIbhkf8HZM6RqJX/69MAAAAASUVORK5CYII=" alt="Spectrum Reach" class="header-logo">
+    <button class="btn btn-ghost btn-sm" onclick="toggleAdmin()">&#9881; Admin</button>
+  </div>
+</div>
+
+<!-- ════ ASSET CONFIG (collapsed by default) ════ -->
+<div class="section hidden" id="config-section" style="animation: none;">
+  <div class="section-header">
+    <h2>Admin Configuration</h2>
+    <span class="badge badge-ok" id="asset-status-badge">Data Loaded</span>
+  </div>
+  <div class="section-body">
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:16px;">
+      Embedded data is loaded by default. Use <strong>Sync</strong> (when hosted on SharePoint) or <strong>Load Asset Files</strong> (from anywhere) to update.
+    </p>
+
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:20px;">
+      <button class="btn btn-primary btn-sm" onclick="syncFromSharePoint()">&#8635; Sync from SharePoint</button>
+      <span style="color:var(--text-muted);font-size:11px;">or</span>
+      <label class="btn btn-ghost btn-sm" style="cursor:pointer;">
+        &#128194; Load Asset Files (.xlsx)
+        <input type="file" id="bulk-file-input" accept=".xlsx,.csv" multiple style="display:none;" />
+      </label>
+    </div>
+    <div style="margin-bottom:14px;">
+      <span id="sp-sync-status" style="font-size:11px;color:var(--text-dim);"></span>
+      <span id="bulk-load-status" style="font-size:11px;color:var(--text-dim);"></span>
+    </div>
+
+    <table class="config-table" id="config-table">
+      <thead><tr><th>Dataset</th><th>Status</th><th>Reload</th></tr></thead>
+      <tbody id="config-tbody"></tbody>
+    </table>
+    <div style="margin-top:16px;">
+      <details>
+        <summary>Templates</summary>
+        <div style="margin:8px 0;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button class="btn btn-ghost btn-sm" onclick="syncTemplatesFromSP()">&#8635; Sync Missing from SP</button>
+          <button class="btn btn-ghost btn-sm" onclick="purgeStaleTemplates()">&#128465; Purge Stale</button>
+          <label class="btn btn-ghost btn-sm" style="cursor:pointer;">&#128194; Upload .pptx <input type="file" id="tpl-upload-input" accept=".pptx" multiple style="display:none;" /></label>
+          <span id="tpl-sync-status" style="font-size:11px;color:var(--text-dim);"></span>
+        </div>
+        <table class="config-table" style="margin-top:8px;">
+          <thead><tr><th>HPO</th><th>Template</th><th>Status</th></tr></thead>
+          <tbody id="template-map-tbody"></tbody>
+        </table>
+      </details>
+      <details style="margin-top:12px;">
+        <summary>SharePoint Sync Location</summary>
+        <div style="margin-top:8px;">
+          <div class="field" style="margin-bottom:8px;"><label>Site URL</label>
+            <input type="text" id="sp-site-url" value="" style="font-size:12px;" /></div>
+          <div class="field" style="margin-bottom:8px;"><label>Assets Path</label>
+            <input type="text" id="sp-assets-path" value="" style="font-size:12px;" /></div>
+          <button class="btn btn-ghost btn-sm" onclick="updateSPConfig()">Save SP Config</button>
+          <span id="sp-config-status" style="font-size:11px;color:var(--text-dim);margin-left:8px;"></span>
+        </div>
+      </details>
+    </div>
+  </div>
+</div>
+
+<!-- ════ STEP 1: SELECTION ════ -->
+<div class="section">
+  <div class="section-header">
+    <span class="step-num">1</span>
+    <h2>Select Parameters</h2>
+  </div>
+  <div class="section-body">
+    <div class="input-row">
+      <div class="field">
+        <label>HPO + Season</label>
+        <select id="hpo-select"><option value="">Select HPO...</option></select>
+      </div>
+      <div class="field">
+        <label>DMA Market</label>
+        <select id="dma-select"><option value="">Select DMA...</option></select>
+      </div>
+      <div class="field">
+        <label>Rate Class</label>
+        <div class="rate-class-toggles">
+          <button type="button" class="rate-toggle active" data-rate="Standard">Standard</button>
+          <button type="button" class="rate-toggle" data-rate="Political">Political</button>
+          <button type="button" class="rate-toggle" data-rate="Special">Special</button>
+        </div>
+        <div class="special-rate-dropdown" id="special-rate-dropdown">
+          <div class="special-rate-option" data-rate="Hold Co. + Horizon">Hold Co. + Horizon</div>
+          <div class="special-rate-option" data-rate="Canvas">Canvas</div>
+        </div>
+        <input type="hidden" id="rate-class-value" value="Standard" />
+      </div>
+      <div class="field">
+        <label>Total Budget</label>
+        <input type="text" id="budget-input" placeholder="$0" />
+      </div>
+    </div>
+    <div class="confirm-row">
+      <button class="btn btn-primary" id="btn-confirm" disabled>Confirm Selection</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ STEP 2: RESULTS ════ -->
+<div class="section hidden" id="results-section">
+  <div class="section-header">
+    <span class="step-num">2</span>
+    <h2>Package Calculations</h2>
+    <span id="results-hpo-badge" class="badge badge-ok" style="margin-left:auto;"></span>
+  </div>
+  <div class="section-body">
+    <div id="validation-bar"></div>
+
+    <div style="margin-bottom:14px;">
+      <div class="sub-label">Live In-Telecast / Base Buy</div>
+      <div class="live-panel">
+        <div class="live-stat"><div class="lbl">Live CPM</div><div class="val" id="r-cpm">—</div></div>
+        <div class="live-stat"><div class="lbl">Live Imps</div><div class="val" id="r-imps">—</div></div>
+        <div class="live-stat"><div class="lbl">Live Investment</div><div class="val" id="r-invest">—</div></div>
+        <div class="live-stat"><div class="lbl">Live Dates</div><div class="val sm" id="r-dates">—</div></div>
+      </div>
+    </div>
+
+    <div class="sub-label">+ Add One Support Package</div>
+    <div class="packages-row" id="packages-row"></div>
+  </div>
+</div>
+
+<!-- ════ STEP 3: GENERATE ════ -->
+<div class="section hidden" id="generate-section">
+  <div class="section-header">
+    <span class="step-num">3</span>
+    <h2>Generate Deck</h2>
+  </div>
+  <div class="section-body">
+    <div id="file-drop-wrap">
+      <div style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
+        <button class="btn btn-primary btn-sm" id="btn-sp-template" onclick="loadTemplateFromSP()">&#8635; Load from SharePoint</button>
+        <span id="sp-tpl-status" style="font-size:11px;color:var(--text-dim);"></span>
+      </div>
+      <div class="file-drop" id="file-drop">
+        <p>Or drop template <strong>.pptx</strong> here / click to browse</p>
+        <div class="hint">Expected: <span id="expected-tpl"></span></div>
+        <input type="file" id="file-input" accept=".pptx" style="display:none;" />
+      </div>
+    </div>
+
+    <div class="hidden" id="tpl-loaded-wrap">
+      <div class="loaded-bar">
+        <span class="badge badge-ok">&#10003; Loaded</span>
+        <span style="font-size:12px;color:var(--text);" id="loaded-name"></span>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="resetTemplate()">Change</button>
+      </div>
+
+      <details style="margin-top:12px;">
+        <summary>Preview Replacements</summary>
+        <table class="repl-table"><thead><tr><th>Find</th><th>Replace With</th></tr></thead>
+        <tbody id="repl-tbody"></tbody></table>
+      </details>
+
+      <div class="actions-row">
+        <button class="btn btn-ghost btn-sm" id="btn-scan">Scan Template</button>
+        <button class="btn btn-primary" id="btn-generate">Generate &amp; Download</button>
+      </div>
+
+      <div class="log hidden" id="log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ SCAN RESULTS ════ -->
+<div class="section hidden" id="scan-section" style="animation: none;">
+  <div class="section-header"><h2>Template Scan Results</h2></div>
+  <div class="section-body">
+    <div class="log" id="scan-results" style="max-height:350px;"></div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════════════
+// HPO Stream Package Builder v9.2.0
+// ══════════════════════════════════════════════════════════════════════
+const ASSET_CONFIG = {
+  sp: {
+    siteUrl: 'https://chartercom.sharepoint.com/sites/Test718',
+    assetsPath: '/sites/Test718/Shared Documents/Assets',
+    files: {
+      hpos: 'HPOs.xlsx',
+      dates: 'Dates.xlsx',
+      live_cpm: 'Live CPM.xlsx',
+      dmas: 'DMAs.xlsx',
+      max_live_imps: 'Max Live Imps.xlsx',
+    },
+  },
+  fileMatch: {
+    hpos:          ['hpos.xlsx'],
+    dates:         ['dates.xlsx'],
+    live_cpm:      ['live cpm.xlsx', 'livecpm.xlsx'],
+    dmas:          ['dmas.xlsx'],
+    max_live_imps: ['max live imps.xlsx', 'maxliveimps.xlsx'],
+  },
+  packages: [
+    { name: 'Addressable', label: 'Addressable Targeting', cpmKey: 'Addressable' },
+    { name: 'Custom Nets', label: 'Custom Networks Targeting', cpmKey: 'Custom Networks' },
+    { name: 'Audience', label: 'Audience Targeting', cpmKey: 'Audience' },
+  ],
+  live_budget_pct: 0.50,
+  support_budget_pct: 0.50,
+  template_pattern: '{hpo}.pptx',
+  builder_template: 'HPO Package Builder Format.pptx',
+};
+
+let dataSource = { hpos: 'embedded', dmas: 'embedded', live_cpm: 'embedded', max_live_imps: 'embedded', dates: 'embedded' };
+
+// ══════════ SHAREPOINT REST API SYNC ══════════
+async function spGetDigest() {
+  const resp = await fetch(`${ASSET_CONFIG.sp.siteUrl}/_api/contextinfo`, {
+    method: 'POST', credentials: 'include',
+    headers: { 'Accept': 'application/json;odata=verbose' },
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const data = await resp.json();
+  return data.d.GetContextWebInformation.FormDigestValue;
+}
+
+async function spFetchFile(filename) {
+  const path = `${ASSET_CONFIG.sp.assetsPath}/${filename}`;
+  const url = `${ASSET_CONFIG.sp.siteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(path)}')/$value`;
+  const resp = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/octet-stream' } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status} fetching ${filename}`);
+  return await resp.arrayBuffer();
+}
+
+async function spFetchTemplate(hpo) {
+  const filename = ASSET_CONFIG.template_pattern.replace('{hpo}', hpo);
+  const path = `${ASSET_CONFIG.sp.assetsPath}/${filename}`;
+  const url = `${ASSET_CONFIG.sp.siteUrl}/_api/web/GetFileByServerRelativeUrl('${encodeURIComponent(path)}')/$value`;
+  const resp = await fetch(url, { credentials: 'include', headers: { 'Accept': 'application/octet-stream' } });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return await JSZip.loadAsync(await resp.arrayBuffer());
+}
+
+async function syncFromSharePoint() {
+  const statusEl = document.getElementById('sp-sync-status');
+  statusEl.textContent = 'Syncing from SharePoint...'; statusEl.style.color = 'var(--yellow)';
+  let succeeded = 0;
+  for (const [key, filename] of Object.entries(ASSET_CONFIG.sp.files)) {
+    try {
+      const ab = await spFetchFile(filename);
+      const wb = XLSX.read(ab, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+      parseDataset(key, rows);
+      dataSource[key] = 'synced';
+      succeeded++;
+    } catch (e) { console.warn(`Failed to sync ${filename}:`, e); }
+  }
+  if (succeeded === Object.keys(ASSET_CONFIG.sp.files).length) {
+    statusEl.textContent = '✓ All datasets synced.'; statusEl.style.color = 'var(--green)';
+  } else if (succeeded > 0) {
+    statusEl.textContent = `Partial sync: ${succeeded}/${Object.keys(ASSET_CONFIG.sp.files).length} datasets.`; statusEl.style.color = 'var(--yellow)';
+  } else {
+    statusEl.textContent = 'Sync failed. Check credentials / network.'; statusEl.style.color = 'var(--red)';
+  }
+  renderConfigTable();
+  populateHPOs();
+  populateDMAs();
+}
+
+async function syncTemplatesFromSP() {
+  const statusEl = document.getElementById('tpl-sync-status');
+  statusEl.textContent = 'Checking templates...'; statusEl.style.color = 'var(--yellow)';
+  const tplStatus = getTemplateStatus();
+  const missing = tplStatus.active.filter(h => !EMBEDDED_TEMPLATES[h]);
+  if (missing.length === 0) { statusEl.textContent = 'All templates embedded.'; statusEl.style.color = 'var(--green)'; return; }
+  let ok = 0;
+  for (const hpo of missing) {
+    try {
+      const zip = await spFetchTemplate(hpo);
+      EMBEDDED_TEMPLATES[hpo] = await zip.generateAsync({ type: 'base64' });
+      ok++;
+    } catch (e) { console.warn(`Could not fetch template for ${hpo}:`, e); }
+  }
+  statusEl.textContent = ok ? `Synced ${ok} template(s).` : 'No templates fetched.';
+  statusEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+  renderConfigTable();
+}
+
+function purgeStaleTemplates() {
+  const active = DATA.hpos.map(h => h.name);
+  let removed = 0;
+  for (const k of Object.keys(EMBEDDED_TEMPLATES)) {
+    if (!active.includes(k)) { delete EMBEDDED_TEMPLATES[k]; removed++; }
+  }
+  const statusEl = document.getElementById('tpl-sync-status');
+  statusEl.textContent = removed ? `Purged ${removed} stale template(s).` : 'No stale templates.';
+  statusEl.style.color = 'var(--green)';
+  renderConfigTable();
+}
+
+function getTemplateStatus() {
+  const active = DATA.hpos.map(h => h.name);
+  const stored = Object.keys(EMBEDDED_TEMPLATES);
+  return { active, stored, missing: active.filter(h => !stored.includes(h)), stale: stored.filter(h => !active.includes(h)) };
+}
+
+// ══════════ BULK LOCAL LOAD ══════════
+function setupBulkFileInput() {
+  const input = document.getElementById('bulk-file-input');
+  if (!input) return;
+  input.addEventListener('change', async e => {
+    const statusEl = document.getElementById('bulk-load-status');
+    statusEl.textContent = 'Loading files...'; statusEl.style.color = 'var(--yellow)';
+    let loaded = 0;
+    for (const file of e.target.files) {
+      const nameLower = file.name.toLowerCase();
+      let matchedKey = null;
+      for (const [key, patterns] of Object.entries(ASSET_CONFIG.fileMatch)) {
+        if (patterns.some(p => nameLower === p || nameLower.endsWith(p))) { matchedKey = key; break; }
+      }
+      if (!matchedKey) { console.log(`Skipped unrecognized file: ${file.name}`); continue; }
+      try {
+        const ab = await file.arrayBuffer();
+        const wb = XLSX.read(ab, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        parseDataset(matchedKey, rows);
+        dataSource[matchedKey] = 'uploaded';
+        loaded++;
+      } catch (err) { console.warn(`Error loading ${file.name}:`, err); }
+    }
+    statusEl.textContent = loaded ? `✓ Loaded ${loaded} file(s).` : 'No recognized files.';
+    statusEl.style.color = loaded ? 'var(--green)' : 'var(--red)';
+    renderConfigTable();
+    populateHPOs();
+    populateDMAs();
+  });
+}
+
+function setupTplUploadInput() {
+  const input = document.getElementById('tpl-upload-input');
+  if (!input) return;
+  input.addEventListener('change', async e => {
+    const statusEl = document.getElementById('tpl-sync-status');
+    statusEl.textContent = 'Uploading templates...'; statusEl.style.color = 'var(--yellow)';
+    let ok = 0;
+    for (const file of e.target.files) {
+      if (!file.name.endsWith('.pptx')) continue;
+      const hpoName = file.name.replace('.pptx', '');
+      try {
+        const ab = await file.arrayBuffer();
+        const zip = await JSZip.loadAsync(ab);
+        EMBEDDED_TEMPLATES[hpoName] = await zip.generateAsync({ type: 'base64' });
+        ok++;
+      } catch (err) { console.warn(`Error processing ${file.name}:`, err); }
+    }
+    statusEl.textContent = ok ? `Uploaded ${ok} template(s).` : 'No templates loaded.';
+    statusEl.style.color = ok ? 'var(--green)' : 'var(--red)';
+    renderConfigTable();
+  });
+}
+
+// ══════════ DATA PARSING ══════════
+function parseDataset(key, rows) {
+  if (key === 'hpos') {
+    DATA.hpos = rows.slice(1).filter(r => r[0]).map(r => ({ name: String(r[0]).trim(), sport: String(r[1] || '').trim() }));
+  } else if (key === 'dmas') {
+    DATA.dmas = rows.slice(1).filter(r => r[0]).map(r => String(r[0]).trim());
+  } else if (key === 'live_cpm') {
+    DATA.live_cpm = {};
+    const headers = rows[0];
+    rows.slice(1).forEach(r => {
+      const hpo = String(r[0] || '').trim(); if (!hpo) return;
+      DATA.live_cpm[hpo] = {};
+      for (let i = 1; i < headers.length; i++) { const cls = String(headers[i]).trim(); DATA.live_cpm[hpo][cls] = parseFloat(r[i]) || 0; }
+    });
+  } else if (key === 'max_live_imps') {
+    DATA.max_live_imps = {};
+    rows.slice(1).forEach(r => {
+      const dma = String(r[0] || '').trim();
+      const hpo = String(r[1] || '').trim();
+      const imps = parseInt(String(r[2]).replace(/,/g, ''), 10) || 0;
+      if (dma && hpo) DATA.max_live_imps[`${dma}|${hpo}`] = imps;
+    });
+  } else if (key === 'dates') {
+    DATA.dates = {};
+    rows.slice(1).forEach(r => {
+      const hpo = String(r[0] || '').trim(); if (!hpo) return;
+      DATA.dates[hpo] = { live_range: String(r[1] || '').trim(), support_range: String(r[2] || '').trim() };
+    });
+  }
+}
+
+// ══════════ EMBEDDED DATA ══════════
+const DATA = {
+  hpos: [
+    { name: 'NBA Playoffs - 2026', sport: 'NBA' },
+    { name: 'FIFA World Cup 2026', sport: 'Soccer' },
+    { name: 'College Football - 2026-2027', sport: 'College Football' },
+  ],
+  dmas: ['New York','Los Angeles','Chicago','Philadelphia','Dallas-Ft. Worth','Houston','Washington DC','Atlanta','Boston','Phoenix','Seattle','Tampa-St. Petersburg','Minneapolis-St. Paul','Denver','Orlando-Daytona Beach','Cleveland','Sacramento','St. Louis','Portland OR','Charlotte','Indianapolis','San Diego','Nashville','Hartford-New Haven','Kansas City','Columbus OH','Salt Lake City','Milwaukee','San Antonio','Austin','Las Vegas','Grand Rapids','Oklahoma City','Birmingham','Harrisburg','Norfolk','Albuquerque','Greensboro','Jacksonville','Louisville','Memphis','New Orleans','Buffalo','Richmond','Fresno','Albany NY','Tulsa','Little Rock','Knoxville','Mobile','West Palm Beach','Wichita','Toledo','Tucson','Honolulu','Omaha','Spokane','Syracuse','Springfield MO','Lexington','Des Moines','Dayton','Rochester NY','Green Bay','Shreveport','Charleston SC','Madison','Baton Rouge','Savannah','Chattanooga','Fort Myers','El Paso','Huntsville','Colorado Springs','Santa Barbara','Cedar Rapids','Jackson MS','Burlington','Waco','Tri-Cities TN','Boise','Augusta','Evansville','Myrtle Beach','Greenville SC','Lincoln','Reno','Tyler TX','Bakersfield','Johnstown PA','Springfield MA'],
+  live_cpm: {
+    'NBA Playoffs - 2026': { Standard: 150, Political: 188, 'Hold Co. + Horizon': 113, Canvas: 135 },
+    'FIFA World Cup 2026': { Standard: 180, Political: 225, 'Hold Co. + Horizon': 135, Canvas: 162 },
+    'College Football - 2026-2027': { Standard: 120, Political: 150, 'Hold Co. + Horizon': 90, Canvas: 108 },
+    'Addressable': { Standard: 60, Political: 72, 'Hold Co. + Horizon': 48, Canvas: 54 },
+    'Custom Networks': { Standard: 45, Political: 54, 'Hold Co. + Horizon': 36, Canvas: 40.5 },
+    'Audience': { Standard: 75, Political: 90, 'Hold Co. + Horizon': 60, Canvas: 67.5 },
+  },
+  max_live_imps: {},
+  dates: {
+    'NBA Playoffs - 2026': { live_range: '4/18/26 - 6/22/26', support_range: '4/18/26 - 6/22/26' },
+    'FIFA World Cup 2026': { live_range: '6/11/26 - 7/19/26', support_range: '6/11/26 - 7/19/26' },
+    'College Football - 2026-2027': { live_range: '8/29/26 - 1/11/27', support_range: '8/29/26 - 1/11/27' },
+  },
+};
+
+const EMBEDDED_TEMPLATES = {};
+
+async function loadEmbeddedTemplate(hpo) {
+  const b64 = EMBEDDED_TEMPLATES[hpo];
+  if (!b64) return null;
+  return await JSZip.loadAsync(b64, { base64: true });
+}
+
+// ══════════ STATE ══════════
+let state = { hpo: null, dma: null, budget: 0, rateClass: 'Standard', liveCpm: 0, liveImps: 0, liveBudget: 0, supportBudget: 0, maxLiveImps: null, liveDates: '', supportDates: '', sport: '', packages: {}, confirmed: false, templateZip: null, templateFile: null };
+
+// ══════════ INIT ══════════
+function init() {
+  populateHPOs();
+  populateDMAs();
+  setupRateClassToggles();
+  setupBudgetInput();
+  setupButtons();
+  setupFileDrop();
+  setupBulkFileInput();
+  setupTplUploadInput();
+  renderConfigTable();
+  loadSPConfig();
+  setupReleaseNotes();
+}
+
+function loadSPConfig() {
+  const spUrlField = document.getElementById('sp-site-url');
+  const spPathField = document.getElementById('sp-assets-path');
+  if (spUrlField) spUrlField.value = ASSET_CONFIG.sp.siteUrl;
+  if (spPathField) spPathField.value = ASSET_CONFIG.sp.assetsPath;
+}
+
+function updateSPConfig() {
+  const url = document.getElementById('sp-site-url').value.trim();
+  const path = document.getElementById('sp-assets-path').value.trim();
+  const statusEl = document.getElementById('sp-config-status');
+  if (url && path) {
+    ASSET_CONFIG.sp.siteUrl = url;
+    ASSET_CONFIG.sp.assetsPath = path;
+    statusEl.textContent = 'Updated (session only).'; statusEl.style.color = 'var(--green)';
+  } else {
+    statusEl.textContent = 'Both fields required.'; statusEl.style.color = 'var(--red)';
+  }
+}
+
+function populateHPOs() {
+  const sel = document.getElementById('hpo-select');
+  while (sel.options.length > 1) sel.remove(1);
+  DATA.hpos.forEach(h => { const opt = document.createElement('option'); opt.value = h.name; opt.textContent = h.name; sel.appendChild(opt); });
+}
+
+function populateDMAs() {
+  const sel = document.getElementById('dma-select');
+  while (sel.options.length > 1) sel.remove(1);
+  DATA.dmas.forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; sel.appendChild(opt); });
+}
+
+function setupRateClassToggles() {
+  const toggles = document.querySelectorAll('.rate-toggle');
+  const specialDropdown = document.getElementById('special-rate-dropdown');
+  const hiddenInput = document.getElementById('rate-class-value');
+  const specialOptions = document.querySelectorAll('.special-rate-option');
+  
+  toggles.forEach(toggle => {
+    toggle.addEventListener('click', () => {
+      toggles.forEach(t => t.classList.remove('active'));
+      toggle.classList.add('active');
+      
+      const rate = toggle.dataset.rate;
+      
+      if (rate === 'Special') {
+        specialDropdown.classList.add('open');
+        // Default to first special option if none selected
+        const selected = specialDropdown.querySelector('.special-rate-option.selected');
+        if (!selected) {
+          specialOptions[0].classList.add('selected');
+          hiddenInput.value = specialOptions[0].dataset.rate;
+        }
+      } else {
+        specialDropdown.classList.remove('open');
+        specialOptions.forEach(o => o.classList.remove('selected'));
+        hiddenInput.value = rate;
+      }
+      checkConfirmReady();
+    });
+  });
+  
+  specialOptions.forEach(opt => {
+    opt.addEventListener('click', () => {
+      specialOptions.forEach(o => o.classList.remove('selected'));
+      opt.classList.add('selected');
+      hiddenInput.value = opt.dataset.rate;
+      checkConfirmReady();
+    });
+  });
+}
+
+function setupBudgetInput() {
+  const input = document.getElementById('budget-input');
+  input.addEventListener('input', e => {
+    let raw = e.target.value.replace(/[^0-9.]/g, '');
+    if (raw) { 
+      const parts = raw.split('.'); 
+      parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ','); 
+      e.target.value = '$' + parts.join('.'); 
+      input.classList.add('has-value');
+    } else { 
+      e.target.value = ''; 
+      input.classList.remove('has-value');
+    }
+    checkConfirmReady();
+  });
+}
+
+function parseBudget(str) { return parseFloat(str.replace(/[^0-9.]/g, '')) || 0; }
+
+function checkConfirmReady() {
+  const hpo = document.getElementById('hpo-select').value;
+  const dma = document.getElementById('dma-select').value;
+  const budget = parseBudget(document.getElementById('budget-input').value);
+  document.getElementById('btn-confirm').disabled = !(hpo && dma && budget > 0);
+}
+
+function setupButtons() {
+  const hpoSelect = document.getElementById('hpo-select');
+  hpoSelect.addEventListener('change', () => {
+    if (hpoSelect.value) {
+      hpoSelect.classList.add('has-value');
+    } else {
+      hpoSelect.classList.remove('has-value');
+    }
+    checkConfirmReady();
+  });
+  
+  const dmaSelect = document.getElementById('dma-select');
+  dmaSelect.addEventListener('change', () => {
+    if (dmaSelect.value) {
+      dmaSelect.classList.add('has-value');
+    } else {
+      dmaSelect.classList.remove('has-value');
+    }
+    checkConfirmReady();
+  });
+  
+  document.getElementById('btn-confirm').addEventListener('click', onConfirm);
+  document.getElementById('btn-generate').addEventListener('click', generatePptx);
+  document.getElementById('btn-scan').addEventListener('click', scanTemplate);
+}
+
+function setupReleaseNotes() {
+  const toggle = document.getElementById('release-notes-toggle');
+  const panel = document.getElementById('release-notes-panel');
+  
+  toggle.addEventListener('click', () => {
+    panel.classList.toggle('open');
+    if (panel.classList.contains('open')) {
+      toggle.textContent = '«Release Notes';
+    } else {
+      toggle.textContent = 'Release Notes»';
+    }
+  });
+  
+  document.addEventListener('click', (e) => {
+    if (!toggle.contains(e.target) && !panel.contains(e.target)) {
+      panel.classList.remove('open');
+      toggle.textContent = 'Release Notes»';
+    }
+  });
+}
+
+function onConfirm() {
+  const hpo = document.getElementById('hpo-select').value;
+  const dma = document.getElementById('dma-select').value;
+  const rateClass = document.getElementById('rate-class-value').value;
+  const budget = parseBudget(document.getElementById('budget-input').value);
+  if (!hpo || !dma || budget <= 0) return;
+
+  const hpoData = DATA.hpos.find(h => h.name === hpo);
+  const cpmTable = DATA.live_cpm[hpo];
+  const liveCpm = cpmTable ? cpmTable[rateClass] : undefined;
+  const dateData = DATA.dates[hpo];
+  const maxKey = `${dma}|${hpo}`;
+  const maxLiveImps = DATA.max_live_imps[maxKey];
+
+  if (liveCpm === undefined) {
+    showValidation('err', `No Live CPM found for "${hpo}" + "${rateClass}". Check asset data.`);
+    document.getElementById('results-section').classList.remove('hidden');
+    document.getElementById('generate-section').classList.add('hidden');
+    return;
+  }
+
+  const liveBudget = budget * ASSET_CONFIG.live_budget_pct;
+  const supportBudget = budget * ASSET_CONFIG.support_budget_pct;
+  const liveImps = Math.round((liveBudget / liveCpm) * 1000);
+
+  state = { ...state, hpo, dma, budget, rateClass, liveCpm, liveImps, liveBudget, supportBudget,
+    maxLiveImps: maxLiveImps !== undefined ? maxLiveImps : null,
+    liveDates: dateData ? dateData.live_range : 'N/A',
+    supportDates: dateData ? dateData.support_range : 'N/A',
+    sport: hpoData ? hpoData.sport : '',
+    packages: {}, confirmed: true,
+  };
+
+  let valid = true;
+  const hasAnyCapData = Object.keys(DATA.max_live_imps).length > 0;
+  if (maxLiveImps !== undefined && liveImps > maxLiveImps) {
+    const maxBudget = Math.floor((maxLiveImps * liveCpm / 1000) * 2);
+    showValidation('err', `Budget too large: ${fmt(liveImps)} live imps exceeds cap of ${fmt(maxLiveImps)} for ${dma}. Max budget: $${fmt(maxBudget)}.`);
+    valid = false;
+  } else if (maxLiveImps === undefined && hasAnyCapData) {
+    // Only warn if cap data exists for some combinations but not this one
+    showValidation('warn', `No max imps data for ${dma} + ${hpo}. Proceeding without cap check.`);
+  } else if (maxLiveImps === undefined) {
+    // No cap data loaded at all - just clear validation, no warning needed
+    document.getElementById('validation-bar').innerHTML = '';
+  } else {
+    showValidation('ok', `Within cap: ${fmt(liveImps)} / ${fmt(maxLiveImps)} live imps (${Math.round(liveImps/maxLiveImps*100)}%)`);
+  }
+
+  document.getElementById('r-cpm').textContent = '$' + fmt(liveCpm);
+  document.getElementById('r-imps').textContent = fmt(liveImps);
+  document.getElementById('r-invest').textContent = '$' + fmt(liveBudget);
+  document.getElementById('r-dates').textContent = state.liveDates;
+  document.getElementById('results-hpo-badge').textContent = `${hpo} · ${rateClass}`;
+
+  const row = document.getElementById('packages-row');
+  row.innerHTML = '';
+  for (const pkg of ASSET_CONFIG.packages) {
+    const supportCpmTable = DATA.live_cpm[pkg.cpmKey];
+    const pkgCpm = supportCpmTable ? (supportCpmTable[rateClass] || 0) : 0;
+    const supportImps = pkgCpm > 0 ? Math.round((supportBudget / pkgCpm) * 1000) : 0;
+    const totalInvestment = budget;
+    const totalImps = liveImps + supportImps;
+    const eCpm = totalImps > 0 ? (totalInvestment / totalImps) * 1000 : 0;
+    state.packages[pkg.name] = { cpm: pkgCpm, supportImps, totalInvestment, totalImps, eCpm };
+
+    const card = document.createElement('div');
+    card.className = 'pkg-card';
+    card.innerHTML = `
+      <div class="pkg-head"><h4>Option ${ASSET_CONFIG.packages.indexOf(pkg)+1}</h4><div class="sub">${pkg.label}</div></div>
+      <div class="pkg-body">
+        <div class="pkg-row"><span class="k">Support Dates</span><span class="v" style="font-size:11px;">${state.supportDates}</span></div>
+        <div class="pkg-row"><span class="k">CPM</span><span class="v">$${pkgCpm}</span></div>
+        <div class="pkg-row"><span class="k">Support Imps</span><span class="v">${fmt(supportImps)}</span></div>
+        <div class="pkg-divider"></div>
+        <div class="pkg-row"><span class="k">Total Investment</span><span class="v">$${fmt(totalInvestment)}</span></div>
+        <div class="pkg-row"><span class="k">Total Imps</span><span class="v">${fmt(totalImps)}</span></div>
+        <div class="pkg-row"><span class="k">eCPM</span><span class="v">$${eCpm.toFixed(2)}</span></div>
+      </div>`;
+    row.appendChild(card);
+  }
+
+  document.getElementById('results-section').classList.remove('hidden');
+  if (valid || maxLiveImps === undefined) {
+    document.getElementById('generate-section').classList.remove('hidden');
+    document.getElementById('expected-tpl').textContent = ASSET_CONFIG.template_pattern.replace('{hpo}', hpo);
+    if (EMBEDDED_TEMPLATES[hpo]) {
+      loadEmbeddedTemplate(hpo).then(zip => {
+        if (zip) {
+          state.templateZip = zip;
+          state.templateFile = { name: ASSET_CONFIG.template_pattern.replace('{hpo}', hpo) };
+          document.getElementById('file-drop-wrap').classList.add('hidden');
+          document.getElementById('tpl-loaded-wrap').classList.remove('hidden');
+          document.getElementById('loaded-name').textContent = state.templateFile.name + ' (embedded)';
+        }
+      }).catch(e => console.warn('Embedded template load failed:', e));
+    }
+    updateReplacementsPreview();
+  } else {
+    document.getElementById('generate-section').classList.add('hidden');
+  }
+  document.getElementById('results-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function showValidation(type, msg) {
+  document.getElementById('validation-bar').innerHTML =
+    `<div class="validation-bar ${type}">${type==='ok'?'&#10003;':type==='warn'?'&#9888;':'&#10007;'} ${esc(msg)}</div>`;
+}
+
+function fmt(n) { if (typeof n !== 'number') return String(n); return n.toLocaleString('en-US', { maximumFractionDigits: 0 }); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ══════════ REPLACEMENT PLAN ══════════
+function getReplacementPlan() {
+  const p = state.packages;
+  return {
+    global: [
+      { find: 'XXX DMA', replace: `${state.dma} DMA` },
+      { find: 'XXX broadcasts', replace: `${state.sport} broadcasts` },
+      { find: 'XXX viewers', replace: `${state.sport} viewers` },
+    ],
+    single: [
+      { find: '$XX CPM', replace: `$${fmt(state.liveCpm)} CPM` },
+      { find: 'XXX,XXX Impressions', replace: `${fmt(state.liveImps)} Impressions` },
+    ],
+    positional: [
+      { find: 'X/XX/XX – X/XX/XX', replacements: [
+        state.liveDates.replace(/ - /g, ' – '), state.supportDates.replace(/ - /g, ' – '),
+        state.supportDates.replace(/ - /g, ' – '), state.supportDates.replace(/ - /g, ' – '),
+      ]},
+      { find: 'XXX,XXX Imps', replacements: [
+        `${fmt(p['Addressable']?.supportImps||0)} Imps`, `${fmt(p['Custom Nets']?.supportImps||0)} Imps`, `${fmt(p['Audience']?.supportImps||0)} Imps`,
+      ]},
+      { find: 'Package Total Imps: XXX,XXX', replacements: [
+        `Package Total Imps: ${fmt(p['Addressable']?.totalImps||0)}`, `Package Total Imps: ${fmt(p['Custom Nets']?.totalImps||0)}`, `Package Total Imps: ${fmt(p['Audience']?.totalImps||0)}`,
+      ]},
+      { find: 'Package Total Investment: $XX,XXX', replacements: [
+        `Package Total Investment: $${fmt(p['Addressable']?.totalInvestment||0)}`, `Package Total Investment: $${fmt(p['Custom Nets']?.totalInvestment||0)}`, `Package Total Investment: $${fmt(p['Audience']?.totalInvestment||0)}`,
+      ]},
+    ],
+    ecpm: [
+      { find: ': $XX', replacements: [
+        `: $${p['Addressable']?.eCpm.toFixed(2)||'0.00'}`, `: $${p['Custom Nets']?.eCpm.toFixed(2)||'0.00'}`, `: $${p['Audience']?.eCpm.toFixed(2)||'0.00'}`,
+      ]}
+    ]
+  };
+}
+
+function updateReplacementsPreview() {
+  const tbody = document.getElementById('repl-tbody'); tbody.innerHTML = '';
+  const plan = getReplacementPlan();
+  const labels = ['Live','Addressable','Custom Nets','Audience'];
+  const pkgLabels = ['Addressable','Custom Nets','Audience'];
+  function row(f, r) { tbody.innerHTML += `<tr><td>${esc(f)}</td><td>${esc(r)}</td></tr>`; }
+  plan.global.forEach(r => row(r.find, r.replace));
+  plan.single.forEach(r => row(r.find, r.replace));
+  plan.positional.forEach(p => p.replacements.forEach((v,i) => row(`${p.find} (#${i+1} ${p.replacements.length===4?labels[i]:pkgLabels[i]})`, v)));
+  plan.ecpm.forEach(e => e.replacements.forEach((v,i) => row(`eCPM${e.find} (#${i+1} ${pkgLabels[i]})`, `eCPM${v}`)));
+}
+
+function replaceNth(str, find, repl, n) {
+  const escaped = find.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  let count = 0;
+  return str.replace(new RegExp(escaped, 'g'), m => (++count === n) ? repl : m);
+}
+
+// ══════════ FILE HANDLING ══════════
+function setupFileDrop() {
+  const drop = document.getElementById('file-drop');
+  const input = document.getElementById('file-input');
+  drop.addEventListener('click', () => input.click());
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('dragover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('dragover'));
+  drop.addEventListener('drop', e => { e.preventDefault(); drop.classList.remove('dragover'); if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]); });
+  input.addEventListener('change', e => { if (e.target.files.length) handleFile(e.target.files[0]); });
+}
+
+async function handleFile(file) {
+  if (!file.name.endsWith('.pptx')) return alert('Please select a .pptx file');
+  try {
+    state.templateZip = await JSZip.loadAsync(await file.arrayBuffer());
+    state.templateFile = file;
+    document.getElementById('file-drop-wrap').classList.add('hidden');
+    document.getElementById('tpl-loaded-wrap').classList.remove('hidden');
+    document.getElementById('loaded-name').textContent = file.name;
+  } catch (e) { alert('Error reading file: ' + e.message); }
+}
+
+async function loadTemplateFromSP() {
+  if (state.hpo && EMBEDDED_TEMPLATES[state.hpo]) {
+    try {
+      const zip = await loadEmbeddedTemplate(state.hpo);
+      if (zip) {
+        state.templateZip = zip;
+        state.templateFile = { name: ASSET_CONFIG.template_pattern.replace('{hpo}', state.hpo) };
+        document.getElementById('file-drop-wrap').classList.add('hidden');
+        document.getElementById('tpl-loaded-wrap').classList.remove('hidden');
+        document.getElementById('loaded-name').textContent = state.templateFile.name + ' (embedded)';
+        return;
+      }
+    } catch(e) { console.warn('Embedded load failed, trying SP:', e); }
+  }
+  if (!state.hpo) return;
+  const statusEl = document.getElementById('sp-tpl-status');
+  const btn = document.getElementById('btn-sp-template');
+  btn.disabled = true; statusEl.textContent = 'Fetching...'; statusEl.style.color = 'var(--yellow)';
+  try {
+    state.templateZip = await spFetchTemplate(state.hpo);
+    state.templateFile = { name: ASSET_CONFIG.template_pattern.replace('{hpo}', state.hpo) };
+    document.getElementById('file-drop-wrap').classList.add('hidden');
+    document.getElementById('tpl-loaded-wrap').classList.remove('hidden');
+    document.getElementById('loaded-name').textContent = state.templateFile.name + ' (from SharePoint)';
+    statusEl.textContent = '';
+  } catch (e) {
+    statusEl.textContent = `Failed: ${e.message}. Use manual upload.`;
+    statusEl.style.color = 'var(--red)';
+  } finally { btn.disabled = false; }
+}
+
+function resetTemplate() {
+  state.templateZip = null; state.templateFile = null;
+  document.getElementById('file-drop-wrap').classList.remove('hidden');
+  document.getElementById('tpl-loaded-wrap').classList.add('hidden');
+  document.getElementById('file-input').value = '';
+}
+
+// ══════════ SCAN ══════════
+async function scanTemplate() {
+  if (!state.templateZip) return;
+  const card = document.getElementById('scan-section');
+  const out = document.getElementById('scan-results');
+  card.classList.remove('hidden'); out.innerHTML = '';
+  const slides = Object.keys(state.templateZip.files).filter(f => /ppt\/slides\/slide\d+\.xml$/.test(f)).sort();
+  for (const sf of slides) {
+    const xml = await state.templateZip.file(sf).async('string');
+    out.innerHTML += `<div style="color:var(--glow-bright);margin-top:6px;font-weight:600;">${sf}</div>`;
+    const paras = xml.match(/<a:p[\s>][\s\S]*?<\/a:p>/g) || [];
+    paras.forEach((p, i) => {
+      const runs = p.match(/<a:t[^>]*>([\s\S]*?)<\/a:t>/g) || [];
+      const full = runs.map(r => r.replace(/<a:t[^>]*>/,'').replace(/<\/a:t>/,'')).join('');
+      if (full.trim() && /X/.test(full)) {
+        const rc = runs.length > 1 ? ` <span style="color:var(--yellow);">[${runs.length} runs]</span>` : '';
+        out.innerHTML += `<div style="padding-left:14px;">P${i}: "${esc(full.trim())}"${rc}</div>`;
+      }
+    });
+  }
+}
+
+// ══════════ GENERATE ══════════
+async function generatePptx() {
+  if (!state.templateZip) return alert('Load a template first.');
+  const logEl = document.getElementById('log'); logEl.classList.remove('hidden'); logEl.innerHTML = '';
+  const log = (m, c='') => { logEl.innerHTML += `<div class="${c}">${m}</div>`; logEl.scrollTop = logEl.scrollHeight; };
+  const plan = getReplacementPlan(); log('Starting generation...');
+
+  const zip = new JSZip();
+  for (const [path, file] of Object.entries(state.templateZip.files)) {
+    if (!file.dir) zip.file(path, await file.async('arraybuffer'));
+  }
+
+  const slides = Object.keys(state.templateZip.files).filter(f => /ppt\/slides\/slide\d+\.xml$/.test(f)).sort();
+  let total = 0;
+
+  for (const sf of slides) {
+    let xml = await state.templateZip.file(sf).async('string');
+    const orig = xml; let sc = 0;
+    for (const r of plan.global) {
+      const re = new RegExp(r.find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'g');
+      const b = xml; xml = xml.replace(re, r.replace);
+      if (xml !== b) { const c = (b.match(re)||[]).length; sc += c; log(`  Global: "${r.find}" → "${r.replace}" (${c}x)`, 'success'); }
+    }
+    for (const r of plan.single) {
+      const re = new RegExp(r.find.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'));
+      if (re.test(xml)) { xml = xml.replace(re, r.replace); sc++; log(`  Single: "${r.find}" → "${r.replace}"`, 'success'); }
+    }
+    for (const rule of plan.positional) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const b = xml; xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== b) { sc++; log(`  Positional: "${rule.find}" #${i+1} → "${rule.replacements[i]}"`, 'success'); }
+      }
+    }
+    for (const rule of plan.ecpm) {
+      for (let i = 0; i < rule.replacements.length; i++) {
+        const b = xml; xml = replaceNth(xml, rule.find, rule.replacements[i], 1);
+        if (xml !== b) { sc++; log(`  eCPM #${i+1} → "${rule.replacements[i]}"`, 'success'); }
+      }
+    }
+    if (xml !== orig) { zip.file(sf, xml); total += sc; }
+  }
+
+  if (total === 0) { log('⚠ No replacements made. Check template patterns.', 'warn'); }
+  else { log(`✓ ${total} replacements completed.`, 'success'); }
+
+  log('Generating file...');
+  try {
+    const blob = await zip.generateAsync({ type:'blob', mimeType:'application/vnd.openxmlformats-officedocument.presentationml.presentation', compression:'DEFLATE', compressionOptions:{level:6} });
+    const name = `${state.hpo} - ${state.dma}.pptx`;
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(a.href);
+    log(`✓ Downloaded: ${name}`, 'success');
+  } catch (e) { log(`✗ Error: ${e.message}`, 'err'); }
+}
+
+// ══════════ ADMIN PANEL ══════════
+const ADMIN_PASSWORD = 'hpo2026';
+let adminAuthenticated = false;
+
+function toggleAdmin() {
+  const panel = document.getElementById('config-section');
+  if (!panel.classList.contains('hidden')) { panel.classList.add('hidden'); return; }
+  if (adminAuthenticated) { panel.classList.remove('hidden'); return; }
+  const pw = prompt('Enter admin password:');
+  if (pw === null) return;
+  if (pw === ADMIN_PASSWORD) { adminAuthenticated = true; panel.classList.remove('hidden'); }
+  else { alert('Incorrect password.'); }
+}
+
+function renderConfigTable() {
+  const tbody = document.getElementById('config-tbody'); tbody.innerHTML = '';
+  const datasets = [
+    { key: 'hpos', label: 'HPOs', count: DATA.hpos.length, unit: 'sports' },
+    { key: 'dmas', label: 'DMAs', count: DATA.dmas.length, unit: 'markets' },
+    { key: 'live_cpm', label: 'Live CPMs', count: Object.keys(DATA.live_cpm).length, unit: 'HPOs' },
+    { key: 'max_live_imps', label: 'Max Live Imps', count: Object.keys(DATA.max_live_imps).length, unit: 'entries' },
+    { key: 'dates', label: 'Dates', count: Object.keys(DATA.dates).length, unit: 'schedules' },
+  ];
+  datasets.forEach(d => {
+    const src = dataSource[d.key];
+    const srcBadge = src === 'synced' ? '<span class="badge badge-ok" style="font-size:9px;">Synced</span>'
+      : src === 'uploaded' ? '<span class="badge badge-ok" style="font-size:9px;">Uploaded</span>'
+      : src === 'manual' ? '<span class="badge badge-ok" style="font-size:9px;">Uploaded</span>'
+      : '<span class="badge badge-warn" style="font-size:9px;">Embedded</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${d.label}</td><td><span class="count">${d.count}</span> ${d.unit} ${srcBadge}</td>
+      <td><label class="btn btn-ghost btn-sm" style="cursor:pointer;">Upload .xlsx <input type="file" accept=".xlsx,.csv" style="display:none;" data-key="${d.key}" /></label></td>`;
+    tr.querySelector('input[type="file"]').addEventListener('change', e => reloadAsset(d.key, e.target.files[0]));
+    tbody.appendChild(tr);
+  });
+  const tmBody = document.getElementById('template-map-tbody'); tmBody.innerHTML = '';
+  const tplStatus = getTemplateStatus();
+  DATA.hpos.forEach(h => {
+    const hasEmbed = !!EMBEDDED_TEMPLATES[h.name];
+    const isActive = tplStatus.active.includes(h.name);
+    const statusBadge = hasEmbed 
+      ? '<span class="badge badge-ok" style="font-size:9px;">Embedded</span>'
+      : isActive 
+        ? '<span class="badge badge-err" style="font-size:9px;">Missing</span>'
+        : '<span class="badge badge-warn" style="font-size:9px;">N/A</span>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${h.name}</td><td style="color:var(--text-dim);font-size:11px;">${ASSET_CONFIG.template_pattern.replace('{hpo}', h.name)}</td><td>${statusBadge}</td>`;
+    tmBody.appendChild(tr);
+  });
+}
+
+async function reloadAsset(key, file) {
+  if (!file) return;
+  try {
+    const ab = await file.arrayBuffer();
+    const wb = XLSX.read(ab, { type: 'array' });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    parseDataset(key, rows);
+    dataSource[key] = 'manual';
+    renderConfigTable();
+    document.getElementById('asset-status-badge').textContent = `${key} Updated`;
+    document.getElementById('asset-status-badge').className = 'badge badge-ok';
+    setTimeout(() => { document.getElementById('asset-status-badge').textContent = 'Data Loaded'; }, 2000);
+  } catch (e) { alert(`Error loading ${key}: ${e.message}`); }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
