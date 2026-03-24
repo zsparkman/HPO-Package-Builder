@@ -2,7 +2,13 @@
   "permissions": {
     "allow": [
       "Bash(node:*)",
-      "Bash(node -e \":*)"
+      "Bash(node -e \":*)",
+      "Bash(sed -n '896,910p' HPO_Stream_Package_Builder_v9.1.1.html)",
+      "Bash(sed -n '984,990p' HPO_Stream_Package_Builder_v9.1.1.html)",
+      "Bash(sed -n '860,870p' HPO_Stream_Package_Builder_v9.1.1.html)",
+      "Bash(grep -n \"XXX DMA\\\\|XXX,XXX\\\\|$XX CPM\\\\|plan\\\\.\\\\|plan =\" \"C:\\\\Users\\\\AI-Operator\\\\HPO-Package-Builder\\\\HPO_Stream_Package_Builder_v9.2.0.html\")",
+      "Bash(python:*)",
+      "Bash(cd:*)"
     ]
   }
 }
