@@ -8,7 +8,9 @@
       "Bash(sed -n '860,870p' HPO_Stream_Package_Builder_v9.1.1.html)",
       "Bash(grep -n \"XXX DMA\\\\|XXX,XXX\\\\|$XX CPM\\\\|plan\\\\.\\\\|plan =\" \"C:\\\\Users\\\\AI-Operator\\\\HPO-Package-Builder\\\\HPO_Stream_Package_Builder_v9.2.0.html\")",
       "Bash(python:*)",
-      "Bash(cd:*)"
+      "Bash(cd:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
     ]
   }
 }
