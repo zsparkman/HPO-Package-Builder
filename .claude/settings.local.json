@@ -10,7 +10,9 @@
       "Bash(python:*)",
       "Bash(cd:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "WebFetch(domain:cdnjs.cloudflare.com)",
+      "Bash(curl:*)"
     ]
   }
 }
