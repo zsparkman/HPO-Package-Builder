@@ -12,7 +12,10 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "WebFetch(domain:cdnjs.cloudflare.com)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(mkdir \"C:/Users/AI-Operator/HPO-Package-Builder/vendor\")",
+      "Bash(mv \"C:/Users/AI-Operator/HPO-Package-Builder/jszip.min.js\" \"C:/Users/AI-Operator/HPO-Package-Builder/vendor/\")",
+      "Bash(mv \"C:/Users/AI-Operator/HPO-Package-Builder/xlsx.full.min.js\" \"C:/Users/AI-Operator/HPO-Package-Builder/vendor/\")"
     ]
   }
 }
